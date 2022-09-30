@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "axolotl-api",
+    "axolotl-game"
+]
