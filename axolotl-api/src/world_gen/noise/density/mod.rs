@@ -6,7 +6,10 @@ use serde_json::Value;
 use crate::game::Game;
 use crate::world_gen::noise::density::builtin::one_param::OneArgBuiltInFunction;
 use crate::world_gen::noise::density::builtin::two_param::TwoParamBuiltInFunction;
-use crate::world_gen::noise::density::loading::DensityLoader;
+use crate::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
+use crate::world_gen::noise::density::perlin::Perlin;
+use crate::world_gen::noise::density::shift::NoiseFunctions;
+use crate::world_gen::noise::Noise;
 
 pub mod builtin;
 pub mod cache;
@@ -15,17 +18,20 @@ mod interpolated;
 pub mod loading;
 pub mod perlin;
 mod shift;
+pub mod spline;
 
 pub enum BuildDefResult<T> {
     Ok(T),
     InvalidFormat,
-    NotFound(Value),
+    NotFound(FunctionArgument),
 }
 
 /// The Current Density State
 
 pub trait DensityState {
     type Random: Rng;
+    fn seed(&self) -> [u8; 16];
+
     fn get_random(&self) -> Self::Random;
 
     fn get_x(&self) -> f64;
@@ -42,7 +48,7 @@ pub trait DensityState {
 pub trait DensityFunction: Debug + Clone {
     type FunctionDefinition;
 
-    fn new<G>(game: &G, def: Self::FunctionDefinition) -> Self
+    fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self
     where
         G: Game;
     fn compute<State: DensityState>(&self, state: &State) -> f64;
@@ -56,7 +62,7 @@ pub trait DensityFunction: Debug + Clone {
     }
 
     fn build_definition<'function, State: DensityState>(
-        value: Value,
+        value: FunctionArgument,
         _state: &mut impl DensityLoader,
     ) -> BuildDefResult<Self::FunctionDefinition> {
         BuildDefResult::NotFound(value)
@@ -70,10 +76,7 @@ pub struct Constant(f64);
 impl DensityFunction for Constant {
     type FunctionDefinition = f64;
 
-    fn new<G>(_game: &G, def: Self::FunctionDefinition) -> Self
-    where
-        G: Game,
-    {
+    fn new<G, DS: DensityState>(_: &G, _: &DS, def: Self::FunctionDefinition) -> Self {
         Self(def)
     }
 
@@ -89,28 +92,27 @@ impl DensityFunction for Constant {
 }
 
 #[derive(Debug, Clone)]
-pub enum Function<'function> {
+pub enum Function<'function, P: Perlin<Noise = Noise, Seed = [u8;16]>> {
     /// A constant value
     Constant(f64),
     Interpolated(Box<interpolated::Interpolated>),
-    Clamp(Box<clamp::Clamp<'function>>),
-    OneParam(Box<OneArgBuiltInFunction<'function>>),
-    TwoParam(Box<TwoParamBuiltInFunction<'function>>),
+    Clamp(Box<clamp::Clamp<'function,P>>),
+    OneParam(Box<OneArgBuiltInFunction<'function,P>>),
+    TwoParam(Box<TwoParamBuiltInFunction<'function,P>>),
     AllInCellCache(Box<cache::all_in_cell::AllInCellCache>),
     FlatCache(Box<cache::flat::FlatCache>),
     TwoDCellCache(Box<cache::two_d::TwoDCache>),
     OnceCache(Box<cache::once::OnceCache>),
+    Noise(NoiseFunctions<P>)
 }
 
-impl<'function> DensityFunction for Function<'function> {
+impl<'function, P: Perlin<Noise = Noise, Seed = [u8;16]>> DensityFunction for Function<'function, P> {
     type FunctionDefinition = ();
 
-    fn new<G>(_game: &G, _def: Self::FunctionDefinition) -> Self
-    where
-        G: Game,
-    {
+    fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self where G: Game {
         todo!()
     }
+
 
     #[inline]
     fn compute<State: DensityState>(&self, state: &State) -> f64 {
@@ -124,6 +126,9 @@ impl<'function> DensityFunction for Function<'function> {
             Function::FlatCache(fun) => fun.compute(state),
             Function::TwoDCellCache(fun) => fun.compute(state),
             Function::OnceCache(fun) => fun.compute(state),
+            Function::Noise(value) => {
+                value.compute(state)
+            }
         }
     }
     #[inline]
@@ -138,6 +143,9 @@ impl<'function> DensityFunction for Function<'function> {
             Function::FlatCache(fun) => fun.max(),
             Function::TwoDCellCache(fun) => fun.max(),
             Function::OnceCache(fun) => fun.max(),
+            Function::Noise(value) => {
+                value.max()
+            }
         }
     }
     #[inline]
@@ -152,6 +160,9 @@ impl<'function> DensityFunction for Function<'function> {
             Function::FlatCache(fun) => fun.min(),
             Function::TwoDCellCache(fun) => fun.min(),
             Function::OnceCache(fun) => fun.min(),
+            Function::Noise(value) => {
+                value.min()
+            }
         }
     }
 }

@@ -32,11 +32,11 @@ impl World for AxolotlWorld {
     type NoiseGenerator = AxolotlGenerator;
 
     fn get_name(&self) -> &str {
-        todo!()
+        &self.name
     }
 
     fn uuid(&self) -> &uuid::Uuid {
-        todo!()
+        &self.uuid
     }
 
     fn generator(&self) -> &Self::NoiseGenerator {

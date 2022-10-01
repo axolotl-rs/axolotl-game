@@ -87,10 +87,13 @@ pub fn squeeze<DF: DensityFunction, State: DensityState>(state: &State, one: &DF
 
 pub mod one_param {
     use crate::game::Game;
-    use crate::world_gen::noise::density::{DensityFunction, DensityState, Function};
+    use crate::world_gen::noise::density::{BuildDefResult, DensityFunction, DensityState, Function};
     use crate::world_gen::noise::density::builtin::{
         abs, cube, half_negative, quarter_negative, square, squeeze,
     };
+    use crate::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
+    use crate::world_gen::noise::density::perlin::Perlin;
+    use crate::world_gen::noise::Noise;
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum OneArgBuiltInFunctionType {
@@ -103,21 +106,74 @@ pub mod one_param {
     }
 
     #[derive(Debug, Clone)]
-    pub struct OneArgBuiltInFunction<'function> {
+    pub struct OneArgBuiltInFunction<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> {
         pub fun_type: OneArgBuiltInFunctionType,
-        pub param: Function<'function>,
+        pub param: Function<'function, P>,
         max: f64,
         min: f64,
     }
 
-    impl<'function> DensityFunction for OneArgBuiltInFunction<'function> {
-        type FunctionDefinition = ();
+    #[derive(Debug, Clone)]
+    pub struct OneParamDefinition {
+        pub fun_type: OneArgBuiltInFunctionType,
+        pub one: Box<FunctionArgument>,
+    }
 
-        fn new<G>(_game: &G, _def: Self::FunctionDefinition) -> Self
-        where
-            G: Game,
-        {
+    impl<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> DensityFunction for OneArgBuiltInFunction<'function, P> {
+        type FunctionDefinition = OneParamDefinition;
+
+        fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self where G: Game {
             todo!()
+        }
+        fn build_definition<'function, State: DensityState>(value: FunctionArgument, _state: &mut impl DensityLoader) -> BuildDefResult<Self::FunctionDefinition> {
+            if let FunctionArgument::Function { name, arguments } = parent {
+                match name.key.as_str() {
+                    "abs" => {
+                        BuildDefResult::Ok(OneParamDefinition {
+                            fun_type: OneArgBuiltInFunctionType::Abs,
+                            one: arguments,
+                        })
+                    }
+                    "cube" => {
+                        BuildDefResult::Ok(OneParamDefinition {
+                            fun_type: OneArgBuiltInFunctionType::Cube,
+                            one: arguments,
+                        })
+                    }
+                    "square" => {
+                        BuildDefResult::Ok(OneParamDefinition {
+                            fun_type: OneArgBuiltInFunctionType::Square,
+                            one: arguments,
+                        })
+                    }
+                    "half_negative" => {
+                        BuildDefResult::Ok(OneParamDefinition {
+                            fun_type: OneArgBuiltInFunctionType::HalfNegative,
+                            one: arguments,
+                        })
+                    }
+                    "quarter_negative" => {
+                        BuildDefResult::Ok(OneParamDefinition {
+                            fun_type: OneArgBuiltInFunctionType::QuarterNegative,
+                            one: arguments,
+                        })
+                    }
+                    "squeeze" => {
+                        BuildDefResult::Ok(OneParamDefinition {
+                            fun_type: OneArgBuiltInFunctionType::Squeeze,
+                            one: arguments,
+                        })
+                    }
+                    _ => {
+                        BuildDefResult::NotFound(FunctionArgument::Function {
+                            name,
+                            arguments,
+                        })
+                    }
+                }
+            } else {
+                return BuildDefResult::NotFound(parent);
+            }
         }
 
         #[inline(always)]
@@ -152,8 +208,9 @@ pub mod two_param {
         BuildDefResult, DensityFunction, DensityState, Function,
     };
     use crate::world_gen::noise::density::builtin::{add, max, min, mul};
-    use crate::world_gen::noise::density::loading::{DensityLoader, UnloadedFunction};
+    use crate::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
     use crate::world_gen::noise::density::perlin::Perlin;
+    use crate::world_gen::noise::Noise;
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum TwoParamBuiltInFunctionType {
@@ -164,10 +221,10 @@ pub mod two_param {
     }
 
     #[derive(Debug, Clone)]
-    pub struct TwoParamBuiltInFunction<'function> {
+    pub struct TwoParamBuiltInFunction<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> {
         pub fun_type: TwoParamBuiltInFunctionType,
-        pub one: Cow<'function, Function<'function>>,
-        pub two: Cow<'function, Function<'function>>,
+        pub one: Cow<'function, Function<'function, P>>,
+        pub two: Cow<'function, Function<'function, P>>,
         max: f64,
         min: f64,
     }
@@ -175,54 +232,65 @@ pub mod two_param {
     #[derive(Debug, Clone)]
     pub struct TwoParamDefinition {
         pub fun_type: TwoParamBuiltInFunctionType,
-        pub one: UnloadedFunction,
-        pub two: UnloadedFunction,
+        pub one: Box<FunctionArgument>,
+        pub two: Box<FunctionArgument>,
     }
 
-    impl<'function> DensityFunction for TwoParamBuiltInFunction<'function> {
+    impl<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> DensityFunction for TwoParamBuiltInFunction<'function, P> {
         type FunctionDefinition = TwoParamDefinition;
 
-        fn new<G>(_game: &G, _def: Self::FunctionDefinition) -> Self
-        where
-            G: Game,
-        {
+        fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self where G: Game {
             todo!()
         }
+
         fn build_definition<State: DensityState>(
-            parent: Value,
+            parent: FunctionArgument,
             state: &mut impl DensityLoader,
         ) -> BuildDefResult<Self::FunctionDefinition> {
-            let fun_type = if let Some(value) = parent.as_object() {
-                if let Some(fun_type) = value.get("type") {
-                    if let Some(fun_type) = fun_type.as_str() {
-                        let fun_type = match fun_type {
-                            "minecraft:add" => TwoParamBuiltInFunctionType::Add,
-                            "minecraft:mul" => TwoParamBuiltInFunctionType::Mul,
-                            "minecraft:max" => TwoParamBuiltInFunctionType::Max,
-                            "minecraft:min" => TwoParamBuiltInFunctionType::Min,
-                            _ => return BuildDefResult::NotFound(parent),
-                        };
-                        Some(fun_type)
-                    } else {
-                        None
+            if let FunctionArgument::TwoArgumentFunction { name, arguments } = parent {
+                match name.key.as_str() {
+                    "add" => {
+                        let (one, two) = arguments;
+                        BuildDefResult::Ok(TwoParamDefinition {
+                            fun_type: TwoParamBuiltInFunctionType::Add,
+                            one,
+                            two,
+                        })
                     }
-                } else {
-                    None
+                    "mul" => {
+                        let (one, two) = arguments;
+                        BuildDefResult::Ok(TwoParamDefinition {
+                            fun_type: TwoParamBuiltInFunctionType::Add,
+                            one,
+                            two,
+                        })
+                    }
+                    "max" => {
+                        let (one, two) = arguments;
+                        BuildDefResult::Ok(TwoParamDefinition {
+                            fun_type: TwoParamBuiltInFunctionType::Add,
+                            one,
+                            two,
+                        })
+                    }
+                    "min" => {
+                        let (one, two) = arguments;
+                        BuildDefResult::Ok(TwoParamDefinition {
+                            fun_type: TwoParamBuiltInFunctionType::Add,
+                            one,
+                            two,
+                        })
+                    }
+                    _ => {
+                        BuildDefResult::NotFound(FunctionArgument::TwoArgumentFunction {
+                            name,
+                            arguments,
+                        })
+                    }
                 }
             } else {
-                None
-            };
-            if let Some(fun_type) = fun_type {
-                let mut value = if let Value::Object(value) = parent {
-                    value
-                } else {
-                    unreachable!()
-                };
-                let one = state.prep_for_load(value.remove("argument1").unwrap());
-                let two = state.prep_for_load(value.remove("argument2").unwrap());
-                return BuildDefResult::Ok(TwoParamDefinition { fun_type, one, two });
+                return BuildDefResult::NotFound(parent);
             }
-            BuildDefResult::NotFound(parent)
         }
         #[inline(always)]
         fn compute<State: DensityState>(&self, state: &State) -> f64 {

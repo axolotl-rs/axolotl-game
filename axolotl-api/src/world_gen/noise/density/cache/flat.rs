@@ -7,10 +7,7 @@ pub struct FlatCache {}
 impl DensityFunction for FlatCache {
     type FunctionDefinition = ();
 
-    fn new<G>(_game: &G, _def: Self::FunctionDefinition) -> Self
-    where
-        G: Game,
-    {
+    fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self where G: Game {
         todo!()
     }
 

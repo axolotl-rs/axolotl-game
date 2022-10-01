@@ -1,4 +1,5 @@
 use paste::paste;
+use crate::NamespacedKey;
 
 use crate::world_gen::noise::density::loading::DensityLoader;
 use crate::world_gen::noise::density::perlin::Perlin;
@@ -8,6 +9,7 @@ pub trait Game: Sized {
     type World: crate::world::World;
     type Biome: crate::world_gen::biome::Biome;
     type Block: crate::item::block::Block;
+
     type DensityLoader: DensityLoader;
     type Perlin: Perlin;
     type Registries: Registries<Self>;
@@ -59,4 +61,6 @@ macro_rules! data_registries {
 data_registries!(Noise, noise);
 pub trait Registry<T> {
     fn register(&mut self, item: T);
+
+    fn get<NS: NamespacedKey>(&self, key: NS) -> Option<&T>;
 }

@@ -130,3 +130,16 @@ pub struct Noise {
     pub amplitudes: Vec<f64>,
     pub first_octave: i32,
 }
+impl From<(Vec<f64>, i32)> for Noise{
+    fn from((am, octave): (Vec<f64>, i32)) -> Self {
+        Self {
+            amplitudes: am,
+            first_octave: octave,
+        }
+    }
+}
+impl Into<(Vec<f64>, i32)> for Noise{
+    fn into(self) -> (Vec<f64>, i32) {
+        (self.amplitudes, self.first_octave)
+    }
+}
