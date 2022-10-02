@@ -9,6 +9,7 @@ pub mod two_d;
 use super::DensityFunction;
 use crate::world_gen::noise::density::groups::{define_group, define_group_def};
 use crate::world_gen::noise::density::BuildDefResult;
+use crate::world_gen::noise::density::DensityContext;
 use crate::world_gen::noise::density::DensityState;
 use crate::world_gen::noise::density::FunctionArgument;
 use crate::world_gen::noise::density::Game;

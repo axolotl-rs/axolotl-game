@@ -3,33 +3,36 @@ use std::hash::{Hash, Hasher};
 
 use uuid::Uuid;
 
-use axolotl_api::item::block::{Block, BlockRules, BlockState};
+use axolotl_api::item::block::{Block, BlockState};
 use axolotl_api::world::{BlockPosition, World};
 
-use crate::world::chunk::AxolotlChunk;
+use crate::world::chunk::{AxolotlChunk, PlacedBlock};
 use crate::world::generator::AxolotlGenerator;
 
+pub mod block;
 pub mod chunk;
-mod generator;
+pub mod generator;
 pub mod level;
 pub mod perlin;
 
 #[derive(Debug)]
-pub struct AxolotlWorld {
+pub struct AxolotlWorld<'game> {
     pub uuid: Uuid,
     pub name: String,
-    pub generator: Box<AxolotlGenerator>,
+    pub generator: Box<AxolotlGenerator<'game>>,
+    phantom: std::marker::PhantomData<&'game ()>,
 }
 
-impl Hash for AxolotlWorld {
+impl Hash for AxolotlWorld<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.uuid.hash(state);
     }
 }
 
-impl World for AxolotlWorld {
+impl<'game> World for AxolotlWorld<'game> {
     type Chunk = AxolotlChunk;
-    type NoiseGenerator = AxolotlGenerator;
+    type NoiseGenerator = AxolotlGenerator<'game>;
+    type WorldBlock = PlacedBlock;
 
     fn get_name(&self) -> &str {
         &self.name
@@ -43,11 +46,7 @@ impl World for AxolotlWorld {
         self.generator.as_ref()
     }
 
-    fn set_block(
-        &self,
-        _location: impl Into<BlockPosition>,
-        _block: impl Block<BlockState = impl BlockState, BlockRules = impl BlockRules>,
-    ) {
+    fn set_block(&self, location: BlockPosition, block: PlacedBlock) {
         todo!()
     }
 }

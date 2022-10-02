@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::world_gen::Precipitation;
 use crate::OwnedNameSpaceKey;
 
-mod parameter;
-mod vanilla;
+pub mod parameter;
+pub mod vanilla;
 
 /// Represents a biome
 pub trait Biome: Debug {

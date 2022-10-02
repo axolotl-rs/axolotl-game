@@ -12,5 +12,5 @@ serde_json = "1"
 uuid = { version = "1", features = ["serde", "v4"] }
 rand = "0.8.5"
 paste = "1.0.9"
-
+log = "0.4.17"
 axolotl-noise = { git = "https://github.com/axolotl-rs/axolotl-noise.git",features=["minecraft"] }

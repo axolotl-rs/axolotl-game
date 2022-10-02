@@ -6,6 +6,7 @@ use std::str::FromStr;
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::game::Game;
 pub use min_max::MinMax;
 
 use crate::world_gen::noise::density::loading::DensityLoader;
@@ -107,11 +108,12 @@ pub struct NoiseSetting {
 ///- Will be implemented in game impl
 ///
 /// Example Imples will be minecraft:noise, minecraft:flat,minecraft:debug,
-pub trait ChunkGenerator {
+pub trait ChunkGenerator<'game> {
     type PerlinNoise: Perlin;
     type ChunkSettings: for<'a> Deserialize<'a>;
     type Chunk;
-    fn new(chunk_settings: Self::ChunkSettings, density: impl DensityLoader) -> Self;
+    type GameTy: Game;
+    fn new(game: &'game Self::GameTy, chunk_settings: Self::ChunkSettings) -> Self;
 
     fn generate_chunk(&self, chunk_x: i32, chunk_z: i32) -> Self::Chunk;
 }

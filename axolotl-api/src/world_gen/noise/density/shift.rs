@@ -8,7 +8,9 @@ use crate::world_gen::noise::density::loading::{
     get_constant, get_noise, DensityLoader, FunctionArgument,
 };
 use crate::world_gen::noise::density::perlin::Perlin;
-use crate::world_gen::noise::density::{BuildDefResult, DensityFunction, DensityState, Function};
+use crate::world_gen::noise::density::{
+    BuildDefResult, DensityContext, DensityFunction, DensityState, Function,
+};
 use crate::world_gen::noise::{NameSpaceKeyOrType, Noise};
 use crate::{NamespacedKey, OwnedNameSpaceKey};
 macro_rules! define_as_noise {
@@ -114,7 +116,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
     type FunctionDefinition = NameSpaceKeyOrType<Noise>;
 
     generic_new_noise!();
-    fn compute<State: DensityState>(&self, state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         <Self as NoiseFunction<P>>::compute(self, state.get_x() as f64, state.get_y() as f64, 0.0)
     }
 }
@@ -141,7 +143,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
 
     generic_new_noise!();
 
-    fn compute<State: DensityState>(&self, state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         <Self as NoiseFunction<P>>::compute(self, state.get_x() as f64, 0.0, state.get_z() as f64)
     }
 }
@@ -167,7 +169,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
 
     generic_new_noise!();
 
-    fn compute<State: DensityState>(&self, state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         <Self as NoiseFunction<P>>::compute(
             self,
             state.get_x() as f64,
@@ -230,7 +232,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
         }
     }
 
-    fn compute<State: DensityState>(&self, state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         let x = state.get_x() as f64 * self.xz_scale + self.shift_x.compute(state);
         let y = state.get_y() as f64 * self.y_scale + self.shift_y.compute(state);
         let z = state.get_z() as f64 * self.xz_scale + self.shift_z.compute(state);

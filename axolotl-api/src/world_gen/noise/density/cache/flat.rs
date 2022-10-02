@@ -1,7 +1,9 @@
 use crate::game::Game;
 use crate::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
 use crate::world_gen::noise::density::perlin::Perlin;
-use crate::world_gen::noise::density::{BuildDefResult, DensityFunction, DensityState, Function};
+use crate::world_gen::noise::density::{
+    BuildDefResult, DensityContext, DensityFunction, DensityState, Function,
+};
 use crate::world_gen::noise::Noise;
 use crate::NamespacedKey;
 use std::borrow::Cow;
@@ -28,7 +30,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
         FlatCache { function }
     }
 
-    fn compute<State: DensityState>(&self, _state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         todo!()
     }
     fn build_definition(

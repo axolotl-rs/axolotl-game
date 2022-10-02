@@ -1,6 +1,6 @@
 use crate::game::Game;
 use crate::world_gen::noise::density::perlin::Perlin;
-use crate::world_gen::noise::density::{DensityFunction, DensityState};
+use crate::world_gen::noise::density::{DensityContext, DensityFunction, DensityState};
 use crate::world_gen::noise::Noise;
 use std::marker::PhantomData;
 
@@ -22,7 +22,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
         todo!()
     }
 
-    fn compute<State: DensityState>(&self, _state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         todo!("Interpolated")
     }
 }

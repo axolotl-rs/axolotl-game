@@ -66,9 +66,3 @@ impl Biome for DataPackBiome {
         todo!()
     }
 }
-
-#[derive(Debug)]
-pub enum DynamicBiome {
-    Compiled(Box<dyn Biome<Precipitation = VanillaPrecipitation>>),
-    DataPack(DataPackBiome),
-}

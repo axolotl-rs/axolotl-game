@@ -3,7 +3,9 @@ use std::borrow::Cow;
 use crate::game::Game;
 use crate::world_gen::noise::density::loading::{get_constant, DensityLoader, FunctionArgument};
 use crate::world_gen::noise::density::perlin::Perlin;
-use crate::world_gen::noise::density::{BuildDefResult, DensityFunction, DensityState, Function};
+use crate::world_gen::noise::density::{
+    BuildDefResult, DensityContext, DensityFunction, DensityState, Function,
+};
 use crate::world_gen::noise::Noise;
 use crate::NamespacedKey;
 
@@ -27,7 +29,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
         todo!()
     }
 
-    fn compute<State: DensityState>(&self, state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         let input = self.input.compute(state);
         input.clamp(self.min, self.max)
     }
@@ -82,7 +84,7 @@ impl<P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'_, P> for YClam
         todo!()
     }
 
-    fn compute<State: DensityState>(&self, state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         todo!("YClampedGradient")
     }
 

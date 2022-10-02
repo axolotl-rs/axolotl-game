@@ -55,7 +55,7 @@ macro_rules! define_group {
                 }
             }
             #[inline(always)]
-            fn compute<State: DensityState>(&self, state: &State) -> f64 {
+            fn compute(&self, state: &impl DensityContext)  -> f64 {
                 match self {
                       $(
                             $name::$ty_name(fun) => DensityFunction::compute(fun, state)

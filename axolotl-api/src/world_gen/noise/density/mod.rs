@@ -37,7 +37,13 @@ impl From<&'static str> for BuildDefResult {
         BuildDefResult::DescriptiveError(s)
     }
 }
+pub trait DensityContext {
+    fn get_x(&self) -> i64;
 
+    fn get_y(&self) -> i64;
+
+    fn get_z(&self) -> i64;
+}
 /// The Current Density State
 
 pub trait DensityState {
@@ -46,12 +52,6 @@ pub trait DensityState {
     fn seed(&self) -> [u8; 16];
 
     fn get_random(&self) -> Self::Random;
-
-    fn get_x(&self) -> i64;
-
-    fn get_y(&self) -> i64;
-
-    fn get_z(&self) -> i64;
 
     fn get_perlin(&self) -> &Self::Perlin;
 
@@ -84,7 +84,7 @@ pub trait DensityFunction<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>>:
     ) -> Self
     where
         G: Game;
-    fn compute<State: DensityState>(&self, state: &State) -> f64;
+    fn compute(&self, state: &impl DensityContext) -> f64;
     /// The maximum value that this function can return.
     fn max(&self) -> f64 {
         f64::MAX
@@ -113,7 +113,7 @@ impl<P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'_, P> for Const
         Self(def)
     }
 
-    fn compute<State: DensityState>(&self, _: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         self.0
     }
     fn max(&self) -> f64 {
@@ -150,7 +150,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
     }
 
     #[inline]
-    fn compute<State: DensityState>(&self, state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         match self {
             Function::Constant(fun) => *fun,
             Function::Interpolated(fun) => fun.compute(state),

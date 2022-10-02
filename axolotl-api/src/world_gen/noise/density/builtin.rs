@@ -1,15 +1,16 @@
 use crate::world_gen::noise::density::perlin::Perlin;
+use crate::world_gen::noise::density::DensityContext;
 use crate::world_gen::noise::density::{DensityFunction, DensityState};
 use crate::world_gen::noise::Noise;
+
 macro_rules! define_simple_function {
     ($name:ident,$value:ident $calculate:block) => {
         pub fn $name<
             'function,
             P: Perlin<Noise = Noise, Seed = [u8; 16]>,
             DF: DensityFunction<'function, P>,
-            State: DensityState,
         >(
-            state: &State,
+            state: &impl DensityContext,
             value: &DF,
         ) -> f64 {
             let $value = value.compute(state);
@@ -20,9 +21,8 @@ macro_rules! define_simple_function {
         pub fn $name<'function,
             P: Perlin<Noise = Noise, Seed = [u8; 16]>,
             DF: DensityFunction<'function, P>,
-            State: DensityState,
         >(
-            $state: &State,
+            $state: &impl DensityContext,
             $one: &DF,
             $two: &DF,
 
@@ -110,7 +110,7 @@ pub mod one_param {
     use crate::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
     use crate::world_gen::noise::density::perlin::Perlin;
     use crate::world_gen::noise::density::{
-        BuildDefResult, DensityFunction, DensityState, Function,
+        BuildDefResult, DensityContext, DensityFunction, DensityState, Function,
     };
     use crate::world_gen::noise::Noise;
 
@@ -150,7 +150,7 @@ pub mod one_param {
             todo!()
         }
         #[inline(always)]
-        fn compute<State: DensityState>(&self, state: &State) -> f64 {
+        fn compute(&self, state: &impl DensityContext) -> f64 {
             match self.fun_type {
                 OneArgBuiltInFunctionType::Abs => abs(state, &self.param),
                 OneArgBuiltInFunctionType::Cube => cube(state, &self.param),
@@ -225,7 +225,7 @@ pub mod two_param {
     use crate::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
     use crate::world_gen::noise::density::perlin::Perlin;
     use crate::world_gen::noise::density::{
-        BuildDefResult, DensityFunction, DensityState, Function,
+        BuildDefResult, DensityContext, DensityFunction, DensityState, Function,
     };
     use crate::world_gen::noise::Noise;
 
@@ -305,7 +305,7 @@ pub mod two_param {
             }
         }
         #[inline(always)]
-        fn compute<State: DensityState>(&self, state: &State) -> f64 {
+        fn compute(&self, state: &impl DensityContext) -> f64 {
             match self.fun_type {
                 TwoParamBuiltInFunctionType::Add => {
                     add(state, self.one.as_ref(), self.two.as_ref())

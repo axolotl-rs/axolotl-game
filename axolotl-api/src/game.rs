@@ -1,9 +1,9 @@
-use crate::NamespacedKey;
+use crate::{NamespacedKey, OwnedNameSpaceKey};
 use paste::paste;
 
 use crate::world_gen::noise::density::loading::DensityLoader;
 use crate::world_gen::noise::density::perlin::Perlin;
-use crate::world_gen::noise::Noise;
+use crate::world_gen::noise::{Noise, NoiseSetting};
 
 pub trait Game: Sized {
     type World: crate::world::World;
@@ -58,9 +58,9 @@ macro_rules! data_registries {
         }
     };
 }
-data_registries!(Noise, noise);
+data_registries!(Noise, noise, NoiseSetting, noise_setting);
 pub trait Registry<T> {
-    fn register(&mut self, item: T);
+    fn register(&mut self, namespace: OwnedNameSpaceKey, item: T);
 
-    fn get<NS: NamespacedKey>(&self, key: &NS) -> Option<&T>;
+    fn get(&self, key: &OwnedNameSpaceKey) -> Option<&T>;
 }

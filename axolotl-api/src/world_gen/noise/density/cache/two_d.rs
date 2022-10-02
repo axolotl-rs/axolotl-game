@@ -3,7 +3,9 @@ use crate::world_gen::chunk::x_z_to_chunk_i64;
 use crate::world_gen::noise::density::cache::AtomicF64;
 use crate::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
 use crate::world_gen::noise::density::perlin::Perlin;
-use crate::world_gen::noise::density::{BuildDefResult, DensityFunction, DensityState, Function};
+use crate::world_gen::noise::density::{
+    BuildDefResult, DensityContext, DensityFunction, DensityState, Function,
+};
 use crate::world_gen::noise::Noise;
 use crate::NamespacedKey;
 use std::sync::atomic::{AtomicI64, Ordering};
@@ -37,7 +39,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
         }
     }
 
-    fn compute<State: DensityState>(&self, state: &State) -> f64 {
+    fn compute(&self, state: &impl DensityContext) -> f64 {
         let i = x_z_to_chunk_i64(state.get_x(), state.get_z());
         if self.last_value.load(Ordering::Relaxed) == i {
             self.cache.load(Ordering::Relaxed)

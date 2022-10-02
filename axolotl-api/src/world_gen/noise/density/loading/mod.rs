@@ -42,18 +42,25 @@ macro_rules! get_noise {
         }
     };
 }
+use crate::game::Game;
+use crate::world_gen::noise::density::perlin::Perlin;
+use crate::world_gen::noise::density::Function;
 pub(crate) use get_noise;
 
 pub trait DensityLoader {
-    type BiomeSource: BiomeSource;
-
-    fn prep_for_load(&self, value: FunctionArgument) -> FunctionArgument;
-
     fn register_top_level(&mut self, key: OwnedNameSpaceKey, value: FunctionArgument);
 
-    fn get_settings(&self, name: impl NamespacedKey) -> &NoiseSetting;
+    fn build_from_def<G: Game, P: Perlin<Noise = Noise, Seed = [u8; 16]>>(
+        &self,
+        game: &G,
+        def: FunctionArgument,
+    ) -> Function<P>;
 
-    fn get_biome_source(&self, name: impl NamespacedKey) -> &Self::BiomeSource;
+    fn build_from_def_with_cache<G: Game, P: Perlin<Noise = Noise, Seed = [u8; 16]>>(
+        &self,
+        game: &G,
+        def: NameSpaceKeyOrType<FunctionArgument>,
+    ) -> Function<P>;
 }
 
 #[cfg_attr(feature = "tabled", derive(Tabled))]

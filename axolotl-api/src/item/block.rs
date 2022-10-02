@@ -1,8 +1,11 @@
+use serde_json::ser::State;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
 use crate::item::Item;
-use crate::world::{World, WorldLocation};
+use crate::world::{BlockPosition, GenericLocation, World, WorldLocation};
+use crate::world_gen::noise::ChunkGenerator;
+use crate::NameSpaceRef;
 
 /// A Generic Block State Type
 #[derive(Debug, Clone)]
@@ -15,106 +18,44 @@ pub enum BlockStateValue {
 
 pub trait BlockState: Debug {
     fn get(&self, name: &str) -> Option<&BlockStateValue>;
+
+    fn set(&mut self, name: impl Into<String>, value: BlockStateValue);
 }
 
 pub trait Block: Item {
-    type BlockState: BlockState;
-    type BlockRules: BlockRules;
+    type State: BlockState;
+    type PlacedBlock: Clone;
+
+    fn get_default_placed_block(&self) -> Self::PlacedBlock;
+
+    fn get_default_state(&self) -> Self::State;
 }
 
-pub trait BlockRules {
-    type B;
-    fn on_place<W: World>(b: Self::B, location: WorldLocation<W>);
-}
+impl<'s, B> Block for &'s B
+where
+    B: Block,
+{
+    type State = B::State;
+    type PlacedBlock = B::PlacedBlock;
 
-#[derive(Debug)]
-pub struct HashMapBasedBlockState {
-    map: HashMap<String, BlockStateValue>,
-}
+    fn get_default_placed_block(&self) -> Self::PlacedBlock {
+        (*self).get_default_placed_block()
+    }
 
-impl HashMapBasedBlockState {
-    pub fn new(map: HashMap<String, BlockStateValue>) -> Self {
-        Self { map }
+    fn get_default_state(&self) -> Self::State {
+        (*self).get_default_state()
     }
 }
+impl<B: Block> Block for Box<B> {
+    type State = B::State;
 
-#[cfg(test)]
-pub mod example_block {
-    use std::collections::HashMap;
-    use std::fmt::Debug;
+    type PlacedBlock = B::PlacedBlock;
 
-    use crate::color::DyeColor;
-    use crate::item::block::{Block, BlockRules, BlockState, BlockStateValue};
-    use crate::item::Item;
-    use crate::world::{World, WorldLocation};
-    use crate::{namespace_with_color, NameSpaceRef};
-
-    #[derive(Debug, Clone, PartialEq)]
-    pub enum BedPart {
-        Head,
-        Foot,
+    fn get_default_placed_block(&self) -> Self::PlacedBlock {
+        (**self).get_default_placed_block()
     }
 
-    #[derive(Debug, Clone, PartialEq)]
-    pub enum BedFacing {
-        North,
-        South,
-        East,
-        West,
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct BedState {
-        pub occupied: bool,
-        pub part: BedPart,
-        pub facing: BedFacing,
-        pub map: HashMap<String, BlockStateValue>,
-    }
-
-    impl BlockState for BedState {
-        // The default values will be found within the map in the natural state
-        fn get(&self, name: &str) -> Option<&BlockStateValue> {
-            self.map.get(name)
-        }
-    }
-
-    pub struct Bed {
-        pub state: BedState,
-        pub color: DyeColor,
-    }
-
-    #[derive(Debug)]
-    pub struct BedRules;
-
-    impl BlockRules for BedRules {
-        type B = Bed;
-        fn on_place<W: World>(b: Bed, location: WorldLocation<W>) {
-            if b.state.part == BedPart::Foot {
-                // In the real game the it would be placed based on the direction the player is facing
-                location.world.set_block(
-                    (location.x as i32, location.y as i32, location.z as i32 + 1),
-                    Bed {
-                        state: BedState {
-                            occupied: false,
-                            part: BedPart::Head,
-                            facing: b.state.facing,
-                            map: b.state.map.clone(),
-                        },
-                        color: b.color,
-                    },
-                );
-            }
-        }
-    }
-
-    impl Item for Bed {
-        fn get_namespace(&self) -> NameSpaceRef<'static> {
-            namespace_with_color!("minecraft", "bed", self.color)
-        }
-    }
-
-    impl Block for Bed {
-        type BlockState = BedState;
-        type BlockRules = BedRules;
+    fn get_default_state(&self) -> Self::State {
+        (**self).get_default_state()
     }
 }
