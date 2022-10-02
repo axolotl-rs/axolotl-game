@@ -1,9 +1,9 @@
 use std::fmt;
 use std::fmt::{Formatter, Write};
 
-use serde::{Deserialize, Deserializer};
 use serde::de::{SeqAccess, Visitor};
-use serde::ser::{Serialize, Serializer, SerializeSeq};
+use serde::ser::{Serialize, SerializeSeq, Serializer};
+use serde::{Deserialize, Deserializer};
 
 #[derive(Debug, Clone)]
 pub struct MinMax {

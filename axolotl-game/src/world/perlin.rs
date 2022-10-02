@@ -1,8 +1,8 @@
-use axolotl_noise::minecraft::MinecraftPerlin;
-use axolotl_noise::minecraft::random::xoroshiro::MinecraftXoroshiro128;
-use axolotl_noise::minecraft::random::xoroshiro::rand_xoshiro::Xoroshiro128PlusPlus;
-use rand::{Rng, SeedableRng};
 use axolotl_api::world_gen::noise::density::perlin::Perlin;
+use axolotl_noise::minecraft::random::xoroshiro::rand_xoshiro::Xoroshiro128PlusPlus;
+use axolotl_noise::minecraft::random::xoroshiro::MinecraftXoroshiro128;
+use axolotl_noise::minecraft::MinecraftPerlin;
+use rand::{Rng, SeedableRng};
 
 use axolotl_api::world_gen::noise::{Noise, NoiseParameters, NoiseSetting};
 
@@ -28,7 +28,6 @@ impl Perlin for GameNoise {
             settings: noise,
         }
     }
-
 
     fn get_setting(&self) -> &Self::Noise {
         &self.settings

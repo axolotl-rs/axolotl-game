@@ -4,8 +4,8 @@ use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 use std::str::FromStr;
 
-use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
 
 mod color;
 pub mod events;
@@ -46,7 +46,6 @@ impl FromStr for OwnedNameSpaceKey {
         })
     }
 }
-
 
 impl TryFrom<String> for OwnedNameSpaceKey {
     type Error = BadNamespacedKeyError;

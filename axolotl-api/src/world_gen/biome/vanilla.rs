@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::OwnedNameSpaceKey;
 use crate::world_gen::biome::{Biome, Carvers, Effects, Features, Spawners};
 use crate::world_gen::Precipitation;
+use crate::OwnedNameSpaceKey;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum VanillaPrecipitation {

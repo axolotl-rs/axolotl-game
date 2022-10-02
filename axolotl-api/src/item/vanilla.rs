@@ -20,8 +20,8 @@ pub mod tool_types {
 pub mod blocks {
     use crate::item::block::{Block, BlockRules, BlockState, BlockStateValue};
     use crate::item::Item;
-    use crate::NameSpaceRef;
     use crate::world::{World, WorldLocation};
+    use crate::NameSpaceRef;
 
     /// For types that should never have a block state
     impl BlockState for () {

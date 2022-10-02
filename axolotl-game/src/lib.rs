@@ -6,7 +6,10 @@ macro_rules! get_type {
             if key.eq("type") {
                 value
             } else {
-                return Err(serde::de::Error::custom(format!("Expected `type` key, got `{}`", key)));
+                return Err(serde::de::Error::custom(format!(
+                    "Expected `type` key, got `{}`",
+                    key
+                )));
             }
         } else {
             return Err(serde::de::Error::custom("Expected `type` key, got nothing"));

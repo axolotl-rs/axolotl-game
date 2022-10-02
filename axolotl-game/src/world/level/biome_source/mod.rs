@@ -1,10 +1,10 @@
-use std::fmt;
-use std::fmt::Formatter;
+use crate::get_type;
+use axolotl_api::world_gen::noise::BiomeSource;
+use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
 use serde::de::{MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};
-use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
-use axolotl_api::world_gen::noise::BiomeSource;
-use crate::get_type;
+use std::fmt;
+use std::fmt::Formatter;
 
 pub enum AxolotlBiomeSource {
     MultiNoise {},
@@ -24,9 +24,7 @@ impl BiomeSource for AxolotlBiomeSource {
 pub enum BiomeSourceSettings {
     MultiNoise {},
     TheEnd {},
-    Fixed {
-        biome: OwnedNameSpaceKey,
-    },
+    Fixed { biome: OwnedNameSpaceKey },
     Checkerboard {},
 }
 
@@ -39,20 +37,14 @@ impl<'de> Visitor<'de> for BiomeSourceSettingsVisitor {
         formatter.write_str("a map")
     }
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-        where
-            A: MapAccess<'de>,
+    where
+        A: MapAccess<'de>,
     {
         let value = get_type!(map);
         match value.get_key() {
-            "multi_noise" => {
-                Ok(BiomeSourceSettings::MultiNoise {})
-            }
-            "the_end" => {
-                Ok(BiomeSourceSettings::TheEnd {})
-            }
-            "checkerboard" => {
-                Ok(BiomeSourceSettings::Checkerboard {})
-            },
+            "multi_noise" => Ok(BiomeSourceSettings::MultiNoise {}),
+            "the_end" => Ok(BiomeSourceSettings::TheEnd {}),
+            "checkerboard" => Ok(BiomeSourceSettings::Checkerboard {}),
             "fixed" => {
                 let biome = map.next_value::<OwnedNameSpaceKey>()?;
                 Ok(BiomeSourceSettings::Fixed { biome })
@@ -66,8 +58,8 @@ impl<'de> Visitor<'de> for BiomeSourceSettingsVisitor {
 
 impl<'de> Deserialize<'de> for BiomeSourceSettings {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_str(BiomeSourceSettingsVisitor)
     }

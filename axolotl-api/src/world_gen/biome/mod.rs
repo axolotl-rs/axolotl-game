@@ -2,8 +2,8 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-use crate::OwnedNameSpaceKey;
 use crate::world_gen::Precipitation;
+use crate::OwnedNameSpaceKey;
 
 mod parameter;
 mod vanilla;

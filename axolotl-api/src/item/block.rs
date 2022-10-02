@@ -43,11 +43,11 @@ pub mod example_block {
     use std::collections::HashMap;
     use std::fmt::Debug;
 
-    use crate::{namespace_with_color, NameSpaceRef};
     use crate::color::DyeColor;
     use crate::item::block::{Block, BlockRules, BlockState, BlockStateValue};
     use crate::item::Item;
     use crate::world::{World, WorldLocation};
+    use crate::{namespace_with_color, NameSpaceRef};
 
     #[derive(Debug, Clone, PartialEq)]
     pub enum BedPart {

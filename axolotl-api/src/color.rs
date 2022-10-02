@@ -8,8 +8,6 @@ macro_rules! namespace_with_color {
     };
 }
 
-
-
 pub trait Color {
     fn color(&self) -> u32;
     fn id(&self) -> u8;

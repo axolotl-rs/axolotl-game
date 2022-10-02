@@ -1,4 +1,4 @@
-use crate::{NamespacedKey, NameSpaceRef};
+use crate::{NameSpaceRef, NamespacedKey};
 
 pub mod block;
 pub mod vanilla;

@@ -3,14 +3,14 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 
-use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::{Error, MapAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
 
 pub use min_max::MinMax;
 
-use crate::OwnedNameSpaceKey;
 use crate::world_gen::noise::density::loading::DensityLoader;
 use crate::world_gen::noise::density::perlin::Perlin;
+use crate::OwnedNameSpaceKey;
 
 pub mod density;
 mod min_max;
@@ -130,7 +130,7 @@ pub struct Noise {
     pub amplitudes: Vec<f64>,
     pub first_octave: i32,
 }
-impl From<(Vec<f64>, i32)> for Noise{
+impl From<(Vec<f64>, i32)> for Noise {
     fn from((am, octave): (Vec<f64>, i32)) -> Self {
         Self {
             amplitudes: am,
@@ -138,7 +138,7 @@ impl From<(Vec<f64>, i32)> for Noise{
         }
     }
 }
-impl Into<(Vec<f64>, i32)> for Noise{
+impl Into<(Vec<f64>, i32)> for Noise {
     fn into(self) -> (Vec<f64>, i32) {
         (self.amplitudes, self.first_octave)
     }
