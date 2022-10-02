@@ -1,13 +1,15 @@
 use crate::world_gen::noise::density::{DensityFunction, DensityState};
+use crate::world_gen::noise::density::perlin::Perlin;
+use crate::world_gen::noise::Noise;
 
 /// https://minecraft.fandom.com/wiki/Density_function#abs
-pub fn abs<DF: DensityFunction, State: DensityState>(state: &State, value: &DF) -> f64 {
+pub fn abs< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF: for<'a> DensityFunction<'a,P>, State: DensityState>(state: &State, value: &DF) -> f64 {
     let value = value.compute(state);
     value.abs()
 }
 
 ///https://minecraft.fandom.com/wiki/Density_function#max
-pub fn max<DF: DensityFunction, State: DensityState>(state: &State, one: &DF, two: &DF) -> f64 {
+pub fn max< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF: for<'a> DensityFunction<'a,P>, State: DensityState>(state: &State, one: &DF, two: &DF) -> f64 {
     let one = one.compute(state);
     return if one >= two.max() {
         one
@@ -18,7 +20,7 @@ pub fn max<DF: DensityFunction, State: DensityState>(state: &State, one: &DF, tw
 }
 
 /// https://minecraft.fandom.com/wiki/Density_function#min
-pub fn min<DF: DensityFunction, Two: DensityFunction, State: DensityState>(
+pub fn min< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF: for<'a>DensityFunction<'a,P>,  Two:for<'a>  DensityFunction<'a,P>, State: DensityState>(
     state: &State,
     one: &DF,
     two: &Two,
@@ -33,33 +35,33 @@ pub fn min<DF: DensityFunction, Two: DensityFunction, State: DensityState>(
 }
 
 /// https://minecraft.fandom.com/wiki/Density_function#add
-pub fn add<DF: DensityFunction, State: DensityState>(state: &State, one: &DF, two: &DF) -> f64 {
+pub fn add< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF: for<'a> DensityFunction<'a,P>, State: DensityState>(state: &State, one: &DF, two: &DF) -> f64 {
     let one = one.compute(state);
     let two = two.compute(state);
     one + two
 }
 
 /// https://minecraft.fandom.com/wiki/Density_function#mul
-pub fn mul<DF: DensityFunction, State: DensityState>(state: &State, one: &DF, two: &DF) -> f64 {
+pub fn mul< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF:for<'a>   DensityFunction<'a,P>, State: DensityState>(state: &State, one: &DF, two: &DF) -> f64 {
     let one = one.compute(state);
     let two = two.compute(state);
     one * two
 }
 
 /// https://minecraft.fandom.com/wiki/Density_function#sub
-pub fn cube<DF: DensityFunction, State: DensityState>(state: &State, one: &DF) -> f64 {
+pub fn cube< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF:for<'a>  DensityFunction<'a,P>, State: DensityState>(state: &State, one: &DF) -> f64 {
     let one = one.compute(state);
     one.powi(3)
 }
 
 /// https://minecraft.fandom.com/wiki/Density_function#cube
-pub fn square<DF: DensityFunction, State: DensityState>(state: &State, one: &DF) -> f64 {
+pub fn square< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF:for<'a>  DensityFunction<'a,P>, State: DensityState>(state: &State, one: &DF) -> f64 {
     let one = one.compute(state);
     one.powi(2)
 }
 
 /// https://minecraft.fandom.com/wiki/Density_function#half_negative
-pub fn half_negative<DF: DensityFunction, State: DensityState>(state: &State, one: &DF) -> f64 {
+pub fn half_negative< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF: for<'a>  DensityFunction<'a,P>, State: DensityState>(state: &State, one: &DF) -> f64 {
     let one = one.compute(state);
     if one < 0.0 {
         one / 2.0
@@ -69,7 +71,7 @@ pub fn half_negative<DF: DensityFunction, State: DensityState>(state: &State, on
 }
 
 ///https://minecraft.fandom.com/wiki/Density_function#quarter_negative
-pub fn quarter_negative<DF: DensityFunction, State: DensityState>(state: &State, one: &DF) -> f64 {
+pub fn quarter_negative< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF:  for<'a> DensityFunction<'a,P>, State: DensityState>(state: &State, one: &DF) -> f64 {
     let one = one.compute(state);
     if one < 0.0 {
         one / 4.0
@@ -79,7 +81,7 @@ pub fn quarter_negative<DF: DensityFunction, State: DensityState>(state: &State,
 }
 
 /// https://minecraft.fandom.com/wiki/Density_function#squeeze
-pub fn squeeze<DF: DensityFunction, State: DensityState>(state: &State, one: &DF) -> f64 {
+pub fn squeeze< P: Perlin<Noise=Noise, Seed=[u8; 16]>,DF:for<'a>  DensityFunction<'a,P>, State: DensityState>(state: &State, one: &DF) -> f64 {
     let one = one.compute(state);
     let x = one.clamp(-1.0, 1.0);
     x / 2.0 - x.powi(3) / 24.0
@@ -119,60 +121,60 @@ pub mod one_param {
         pub one: Box<FunctionArgument>,
     }
 
-    impl<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> DensityFunction for OneArgBuiltInFunction<'function, P> {
+    impl<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> DensityFunction<'function,P> for OneArgBuiltInFunction<'function, P> {
         type FunctionDefinition = OneParamDefinition;
 
         fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self where G: Game {
             todo!()
         }
-        fn build_definition<'function, State: DensityState>(value: FunctionArgument, _state: &mut impl DensityLoader) -> BuildDefResult<Self::FunctionDefinition> {
-            if let FunctionArgument::Function { name, arguments } = parent {
+        fn build_definition(value: FunctionArgument, _state: &mut impl DensityLoader) -> Result<Self::FunctionDefinition, BuildDefResult> {
+            if let FunctionArgument::Function { name, mut arguments } = value {
                 match name.key.as_str() {
                     "abs" => {
-                        BuildDefResult::Ok(OneParamDefinition {
+                        Ok(OneParamDefinition {
                             fun_type: OneArgBuiltInFunctionType::Abs,
-                            one: arguments,
+                            one: arguments.remove("argument").unwrap(),
                         })
                     }
                     "cube" => {
-                        BuildDefResult::Ok(OneParamDefinition {
+                        Ok(OneParamDefinition {
                             fun_type: OneArgBuiltInFunctionType::Cube,
-                            one: arguments,
+                            one: arguments.remove("argument").unwrap(),
                         })
                     }
                     "square" => {
-                        BuildDefResult::Ok(OneParamDefinition {
+                        Ok(OneParamDefinition {
                             fun_type: OneArgBuiltInFunctionType::Square,
-                            one: arguments,
+                            one: arguments.remove("argument").unwrap(),
                         })
                     }
                     "half_negative" => {
-                        BuildDefResult::Ok(OneParamDefinition {
+                        Ok(OneParamDefinition {
                             fun_type: OneArgBuiltInFunctionType::HalfNegative,
-                            one: arguments,
+                            one: arguments.remove("argument").unwrap(),
                         })
                     }
                     "quarter_negative" => {
-                        BuildDefResult::Ok(OneParamDefinition {
+                        Ok(OneParamDefinition {
                             fun_type: OneArgBuiltInFunctionType::QuarterNegative,
-                            one: arguments,
+                            one: arguments.remove("argument").unwrap(),
                         })
                     }
                     "squeeze" => {
-                        BuildDefResult::Ok(OneParamDefinition {
+                        Ok(OneParamDefinition {
                             fun_type: OneArgBuiltInFunctionType::Squeeze,
-                            one: arguments,
+                            one: arguments.remove("argument").unwrap(),
                         })
                     }
                     _ => {
-                        BuildDefResult::NotFound(FunctionArgument::Function {
+                        Err(BuildDefResult::NotFound(FunctionArgument::Function {
                             name,
                             arguments,
-                        })
+                        }))
                     }
                 }
             } else {
-                return BuildDefResult::NotFound(parent);
+                return Err(BuildDefResult::NotFound(value));
             }
         }
 
@@ -236,60 +238,56 @@ pub mod two_param {
         pub two: Box<FunctionArgument>,
     }
 
-    impl<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> DensityFunction for TwoParamBuiltInFunction<'function, P> {
+    impl<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> DensityFunction<'function,P> for TwoParamBuiltInFunction<'function, P> {
         type FunctionDefinition = TwoParamDefinition;
 
         fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self where G: Game {
             todo!()
         }
 
-        fn build_definition<State: DensityState>(
+        fn build_definition(
             parent: FunctionArgument,
             state: &mut impl DensityLoader,
-        ) -> BuildDefResult<Self::FunctionDefinition> {
-            if let FunctionArgument::TwoArgumentFunction { name, arguments } = parent {
+        ) -> Result<Self::FunctionDefinition, BuildDefResult> {
+            if let FunctionArgument::Function { name, mut arguments } = parent {
                 match name.key.as_str() {
                     "add" => {
-                        let (one, two) = arguments;
-                        BuildDefResult::Ok(TwoParamDefinition {
+                        Ok(TwoParamDefinition {
                             fun_type: TwoParamBuiltInFunctionType::Add,
-                            one,
-                            two,
+                            one: arguments.remove("argument1").unwrap(),
+                            two: arguments.remove("argument2").unwrap(),
                         })
                     }
                     "mul" => {
-                        let (one, two) = arguments;
-                        BuildDefResult::Ok(TwoParamDefinition {
+                        Ok(TwoParamDefinition {
                             fun_type: TwoParamBuiltInFunctionType::Add,
-                            one,
-                            two,
+                            one: arguments.remove("argument1").unwrap(),
+                            two: arguments.remove("argument2").unwrap(),
                         })
                     }
                     "max" => {
-                        let (one, two) = arguments;
-                        BuildDefResult::Ok(TwoParamDefinition {
+                        Ok(TwoParamDefinition {
                             fun_type: TwoParamBuiltInFunctionType::Add,
-                            one,
-                            two,
+                            one: arguments.remove("argument1").unwrap(),
+                            two: arguments.remove("argument2").unwrap(),
                         })
                     }
                     "min" => {
-                        let (one, two) = arguments;
-                        BuildDefResult::Ok(TwoParamDefinition {
+                       Ok(TwoParamDefinition {
                             fun_type: TwoParamBuiltInFunctionType::Add,
-                            one,
-                            two,
+                            one: arguments.remove("argument1").unwrap(),
+                            two: arguments.remove("argument2").unwrap(),
                         })
                     }
                     _ => {
-                        BuildDefResult::NotFound(FunctionArgument::TwoArgumentFunction {
+                        Err(BuildDefResult::NotFound(FunctionArgument::Function {
                             name,
                             arguments,
-                        })
+                        }))
                     }
                 }
             } else {
-                return BuildDefResult::NotFound(parent);
+                return Err(BuildDefResult::NotFound(parent));
             }
         }
         #[inline(always)]

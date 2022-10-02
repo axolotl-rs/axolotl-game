@@ -11,7 +11,7 @@ pub trait Game: Sized {
     type Block: crate::item::block::Block;
 
     type DensityLoader: DensityLoader;
-    type Perlin: Perlin;
+    type Perlin: Perlin<Noise=Noise, Seed=[u8; 16]>;
     type Registries: Registries<Self>;
     type DataRegistries: DataRegistries;
     fn registries(&self) -> &Self::Registries;

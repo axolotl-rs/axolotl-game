@@ -20,37 +20,48 @@ pub mod perlin;
 mod shift;
 pub mod spline;
 
-pub enum BuildDefResult<T> {
-    Ok(T),
+pub enum BuildDefResult {
     InvalidFormat,
+    DescriptiveError(&'static str),
     NotFound(FunctionArgument),
+}
+
+impl From<&'static str> for BuildDefResult {
+    fn from(s: &'static str) -> Self {
+        BuildDefResult::DescriptiveError(s)
+    }
 }
 
 /// The Current Density State
 
 pub trait DensityState {
     type Random: Rng;
+    type Perlin: Perlin<Noise=Noise, Seed=[u8; 16]>;
     fn seed(&self) -> [u8; 16];
 
     fn get_random(&self) -> Self::Random;
 
-    fn get_x(&self) -> f64;
+    fn get_x(&self) -> i64;
 
-    fn get_y(&self) -> f64;
+    fn get_y(&self) -> i64;
 
-    fn get_z(&self) -> f64;
+    fn get_z(&self) -> i64;
+
+    fn get_perlin(&self) -> &Self::Perlin;
+
+    fn build_from_def<G: Game, P: Perlin<Noise=Noise, Seed=[u8; 16]>>(&self, game: &G, def: FunctionArgument) -> Function<P>;
 }
 
 /// The DensityFunction is a generic trait for all density functions.
 ///
 /// You pass in a DensityState which contains all the functions and noises that are available.
 ///
-pub trait DensityFunction: Debug + Clone {
+pub trait DensityFunction<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>>: Debug + Clone {
     type FunctionDefinition;
 
-    fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self
-    where
-        G: Game;
+    fn new<G, DS: DensityState<Perlin = P>>(game: &G, state: &'function DS, def: Self::FunctionDefinition) -> Self
+        where
+            G: Game;
     fn compute<State: DensityState>(&self, state: &State) -> f64;
     /// The maximum value that this function can return.
     fn max(&self) -> f64 {
@@ -61,11 +72,11 @@ pub trait DensityFunction: Debug + Clone {
         f64::MIN
     }
 
-    fn build_definition<'function, State: DensityState>(
+    fn build_definition(
         value: FunctionArgument,
         _state: &mut impl DensityLoader,
-    ) -> BuildDefResult<Self::FunctionDefinition> {
-        BuildDefResult::NotFound(value)
+    ) -> Result<Self::FunctionDefinition, BuildDefResult<>> {
+        Err(BuildDefResult::NotFound(value))
     }
 }
 
@@ -73,7 +84,7 @@ pub trait DensityFunction: Debug + Clone {
 pub struct Constant(f64);
 
 /// A Function is a wrapper around a DensityFunction.
-impl DensityFunction for Constant {
+impl< P: Perlin<Noise=Noise, Seed=[u8; 16]>> DensityFunction<'_,P> for Constant {
     type FunctionDefinition = f64;
 
     fn new<G, DS: DensityState>(_: &G, _: &DS, def: Self::FunctionDefinition) -> Self {
@@ -92,21 +103,21 @@ impl DensityFunction for Constant {
 }
 
 #[derive(Debug, Clone)]
-pub enum Function<'function, P: Perlin<Noise = Noise, Seed = [u8;16]>> {
+pub enum Function<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> {
     /// A constant value
     Constant(f64),
-    Interpolated(Box<interpolated::Interpolated>),
-    Clamp(Box<clamp::Clamp<'function,P>>),
-    OneParam(Box<OneArgBuiltInFunction<'function,P>>),
-    TwoParam(Box<TwoParamBuiltInFunction<'function,P>>),
-    AllInCellCache(Box<cache::all_in_cell::AllInCellCache>),
-    FlatCache(Box<cache::flat::FlatCache>),
-    TwoDCellCache(Box<cache::two_d::TwoDCache>),
-    OnceCache(Box<cache::once::OnceCache>),
-    Noise(NoiseFunctions<P>)
+    Interpolated(Box<interpolated::Interpolated<P>>),
+    Clamp(Box<clamp::Clamp<'function, P>>),
+    OneParam(Box<OneArgBuiltInFunction<'function, P>>),
+    TwoParam(Box<TwoParamBuiltInFunction<'function, P>>),
+    AllInCellCache(Box<cache::all_in_cell::AllInCellCache<'function, P>>),
+    FlatCache(Box<cache::flat::FlatCache<'function, P>>),
+    TwoDCellCache(Box<cache::two_d::TwoDCache<'function, P>>),
+    OnceCache(Box<cache::once::OnceCache<'function, P>>),
+    Noise(NoiseFunctions<P>),
 }
 
-impl<'function, P: Perlin<Noise = Noise, Seed = [u8;16]>> DensityFunction for Function<'function, P> {
+impl<'function, P: Perlin<Noise=Noise, Seed=[u8; 16]>> DensityFunction<'_,P> for Function<'function, P> {
     type FunctionDefinition = ();
 
     fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self where G: Game {

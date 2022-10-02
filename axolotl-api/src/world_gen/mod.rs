@@ -1,5 +1,5 @@
 pub mod biome;
-mod chunk;
+pub mod chunk;
 mod dimension;
 mod manager;
 pub mod noise;

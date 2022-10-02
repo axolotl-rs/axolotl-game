@@ -6,12 +6,14 @@ use crate::game::Game;
 use crate::world_gen::noise::density::{DensityFunction, DensityState};
 
 use crate::world_gen::noise::density::loading::FunctionArgument;
-use crate::world_gen::noise::NameSpaceKeyOrType;
+use crate::world_gen::noise::{NameSpaceKeyOrType, Noise};
+use crate::world_gen::noise::density::perlin::Perlin;
+
 #[derive(Debug, Clone)]
 pub struct SplineFunction{
     pub spline: Spline,
 }
-impl DensityFunction for SplineFunction{
+impl<P: Perlin<Noise=Noise, Seed=[u8; 16]>> DensityFunction<'_,P> for SplineFunction{
     type FunctionDefinition = Spline;
 
     fn new<G, DS: DensityState>(game: &G, state: &DS, def: Self::FunctionDefinition) -> Self where G: Game {
