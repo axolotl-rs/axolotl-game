@@ -8,7 +8,6 @@ use axolotl_api::game::Game;
 use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
 use serde::de::{MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};
-use serde_json::Value;
 
 use crate::{get_type, AxolotlGame};
 use axolotl_api::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
@@ -35,11 +34,11 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
     type Chunk = AxolotlChunk;
     type GameTy = AxolotlGame;
 
-    fn new(game: &Self::GameTy, chunk_settings: Self::ChunkSettings) -> Self {
+    fn new(_game: &Self::GameTy, _chunk_settings: Self::ChunkSettings) -> Self {
         todo!()
     }
 
-    fn generate_chunk(&self, _chunk_x: i32, _chunk_z: i32) -> Self::Chunk {
+    fn generate_chunk(&self, _chunk_x: i64, _chunk_z: i64) -> Self::Chunk {
         todo!()
     }
 }
@@ -122,16 +121,16 @@ impl DensityLoader for AxolotlDensityLoader {
 
     fn build_from_def<G: Game, P: Perlin<Noise = Noise, Seed = [u8; 16]>>(
         &self,
-        game: &G,
-        def: FunctionArgument,
+        _game: &G,
+        _def: FunctionArgument,
     ) -> Function<P> {
         todo!()
     }
 
     fn build_from_def_with_cache<G: Game, P: Perlin<Noise = Noise, Seed = [u8; 16]>>(
         &self,
-        game: &G,
-        def: NameSpaceKeyOrType<FunctionArgument>,
+        _game: &G,
+        _def: NameSpaceKeyOrType<FunctionArgument>,
     ) -> Function<P> {
         todo!()
     }
@@ -163,16 +162,16 @@ impl<'function, 'game> DensityState for AxolotlDensityState<'function, 'game> {
 
     fn build_from_def<G: Game, P: Perlin<Noise = Noise, Seed = [u8; 16]>>(
         &self,
-        game: &G,
-        def: FunctionArgument,
+        _game: &G,
+        _def: FunctionArgument,
     ) -> Function<P> {
         todo!()
     }
 
     fn build_from_def_with_cache<G: Game, P: Perlin<Noise = Noise, Seed = [u8; 16]>>(
         &self,
-        game: &G,
-        def: NameSpaceKeyOrType<FunctionArgument>,
+        _game: &G,
+        _def: NameSpaceKeyOrType<FunctionArgument>,
     ) -> Function<P> {
         todo!()
     }

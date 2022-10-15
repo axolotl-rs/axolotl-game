@@ -115,7 +115,7 @@ pub trait ChunkGenerator<'game> {
     type GameTy: Game;
     fn new(game: &'game Self::GameTy, chunk_settings: Self::ChunkSettings) -> Self;
 
-    fn generate_chunk(&self, chunk_x: i32, chunk_z: i32) -> Self::Chunk;
+    fn generate_chunk(&self, chunk_x: i64, chunk_z: i64) -> Self::Chunk;
 }
 
 /// Biome Source

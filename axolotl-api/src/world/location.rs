@@ -8,7 +8,7 @@ pub trait Location: Debug {
     /// get X coordinate
     fn get_x(&self) -> f64;
     /// get Y coordinate
-    fn get_y(&self) -> f64;
+    fn get_y(&self) -> f32;
     /// get Z coordinate
     fn get_z(&self) -> f64;
     /// get yaw
@@ -20,7 +20,7 @@ pub trait Location: Debug {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GenericLocation {
     pub x: f64,
-    pub y: f64,
+    pub y: f32,
     pub z: f64,
     pub yaw: f64,
     pub pitch: f64,
@@ -30,7 +30,7 @@ impl Location for GenericLocation {
     fn get_x(&self) -> f64 {
         self.x
     }
-    fn get_y(&self) -> f64 {
+    fn get_y(&self) -> f32 {
         self.y
     }
     fn get_z(&self) -> f64 {
@@ -44,8 +44,8 @@ impl Location for GenericLocation {
     }
 }
 
-impl From<(f64, f64, f64)> for GenericLocation {
-    fn from((x, y, z): (f64, f64, f64)) -> Self {
+impl From<(f64, f32, f64)> for GenericLocation {
+    fn from((x, y, z): (f64, f32, f64)) -> Self {
         Self {
             x,
             y,
@@ -59,7 +59,7 @@ impl From<(f64, f64, f64)> for GenericLocation {
 #[derive(Debug)]
 pub struct WorldLocation<W: World> {
     pub x: f64,
-    pub y: f64,
+    pub y: f32,
     pub z: f64,
     pub yaw: f64,
     pub pitch: f64,
@@ -83,7 +83,7 @@ impl<W: World> Location for WorldLocation<W> {
     fn get_x(&self) -> f64 {
         self.x
     }
-    fn get_y(&self) -> f64 {
+    fn get_y(&self) -> f32 {
         self.y
     }
     fn get_z(&self) -> f64 {

@@ -40,7 +40,7 @@ impl From<&'static str> for BuildDefResult {
 pub trait DensityContext {
     fn get_x(&self) -> i64;
 
-    fn get_y(&self) -> i64;
+    fn get_y(&self) -> i16;
 
     fn get_z(&self) -> i64;
 }

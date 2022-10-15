@@ -1,15 +1,13 @@
 pub mod material;
 
-use crate::world::block::material::GenericMaterial;
 use crate::world::chunk::PlacedBlock;
 use crate::AxolotlWorld;
 use axolotl_api::item::block::{Block, BlockState, BlockStateValue};
 use axolotl_api::item::Item;
 use axolotl_api::world::BlockPosition;
 use axolotl_api::NameSpaceRef;
-use serde_json::ser::State;
+
 use std::collections::HashMap;
-use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct MapState {
@@ -35,9 +33,9 @@ impl BlockState for MapState {
 pub trait AxolotlBlock: Block {
     fn on_block_placed(
         &self,
-        block_state: &Self::State,
-        location: &BlockPosition,
-        world: &AxolotlWorld,
+        _block_state: &Self::State,
+        _location: &BlockPosition,
+        _world: &AxolotlWorld,
     ) {
         // By default, do nothing
     }
@@ -69,7 +67,7 @@ impl Block for &'static MinecraftBlock {
                 state: MapState::default(),
                 block: self,
             },
-            MinecraftBlock::GenericBlock(_, block) => PlacedBlock {
+            MinecraftBlock::GenericBlock(_, _block) => PlacedBlock {
                 state: MapState::default(),
                 block: self,
             },

@@ -2,10 +2,14 @@ use axolotl_api::item::block::Block;
 use axolotl_api::item::Item;
 use axolotl_api::NameSpaceRef;
 use std::collections::HashMap;
+use tokio::sync::mpsc::Receiver;
+use tux_lockfree::map::Map;
 
 use crate::world::block::MapState;
+use crate::world::ChunkUpdate;
 use crate::MinecraftBlock;
 use axolotl_api::world::BlockPosition;
+use axolotl_api::world_gen::chunk::ChunkPos;
 
 #[derive(Debug, Clone)]
 pub struct PlacedBlock {
@@ -33,7 +37,11 @@ impl Block for PlacedBlock {
 }
 #[derive(Debug)]
 pub struct AxolotlChunk {
-    pub chunk_x: i32,
-    pub chunk_z: i32,
+    pub chunk_x: i64,
+    pub chunk_z: i64,
     pub blocks: HashMap<BlockPosition, PlacedBlock>,
+}
+pub struct ChunkMap {
+    pub thread_safe_chunks: Map<ChunkPos, AxolotlChunk>,
+    pub queue: Receiver<ChunkUpdate>,
 }

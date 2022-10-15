@@ -1,0 +1,25 @@
+[package]
+name = "axolotl-world"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_derive = { version = "1.0", features = ["deserialize_in_place"] }
+serde = { version = "1.0" }
+axolotl-nbt = { git = "https://github.com/axolotl-rs/axolotl-nbt.git", features = ["value", "serde"] }
+flate2 = { version = "1" }
+thiserror = "1"
+byteorder = { version = "1" }
+log = { version = "0.4" }
+uuid = { version = "1", features = ["v4"] }
+axolotl-types = { git = "https://github.com/axolotl-rs/plain-axolotl.git" }
+itoa = "1"
+[features]
+log_all = ["axolotl-nbt/log_all"]
+[dev-dependencies]
+log = "0.4.17"
+simple-log = "1.6.0"
+flate2 = { version = "1.0.24" }

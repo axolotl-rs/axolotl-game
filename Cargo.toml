@@ -2,5 +2,6 @@
 
 members = [
     "axolotl-api",
-    "axolotl-game"
+    "axolotl-game",
+    "axolotl-world"
 ]

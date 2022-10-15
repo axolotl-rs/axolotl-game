@@ -1,5 +1,8 @@
 pub mod world;
-
+#[test]
+pub fn test_build() {
+    println!("test_build");
+}
 macro_rules! get_type {
     ($map:expr) => {
         if let Some((key, value)) = $map.next_entry::<String, OwnedNameSpaceKey>()? {
@@ -21,10 +24,10 @@ use crate::world::generator::AxolotlDensityLoader;
 use crate::world::perlin::GameNoise;
 use crate::world::AxolotlWorld;
 use axolotl_api::game::{DataRegistries, Game, Registries, Registry};
-use axolotl_api::item::block::{Block, BlockState};
+use axolotl_api::item::block::BlockState;
 use axolotl_api::world_gen::biome::vanilla::DataPackBiome;
 use axolotl_api::world_gen::noise::{Noise, NoiseSetting};
-use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
+use axolotl_api::OwnedNameSpaceKey;
 pub(crate) use get_type;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};

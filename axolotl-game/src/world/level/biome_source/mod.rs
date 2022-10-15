@@ -16,7 +16,7 @@ pub enum AxolotlBiomeSource {
 impl BiomeSource for AxolotlBiomeSource {
     type Preset = BiomeSourceSettings;
 
-    fn new(preset: Self::Preset) -> Self {
+    fn new(_preset: Self::Preset) -> Self {
         todo!()
     }
 }
