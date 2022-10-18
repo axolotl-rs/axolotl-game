@@ -28,11 +28,22 @@ pub trait LevelReader {
     fn get_chunk(&self, chunk_pos: &ChunkPos) -> Result<Option<RawChunk>, Self::Error>;
 }
 pub trait LevelWriter {
-    type Error: Debug;
+    type Error: Debug + Into<crate::Error>;
 
-    fn set_chunk(&mut self, chunk_pos: ChunkPos, chunk: RawChunk) -> Result<(), Self::Error>;
+    fn save_chunk(&self, chunk_pos: ChunkPos, chunk: impl IntoRawChunk) -> Result<(), Self::Error>;
     fn save_chunks(
-        &mut self,
+        &self,
         chunks: impl Iterator<Item = (ChunkPos, RawChunk)>,
     ) -> Result<(), Self::Error>;
+}
+
+pub trait IntoRawChunk {
+    fn into_raw_chunk(self) -> RawChunk;
+
+    fn into_raw_chunk_use(self, chunk: &mut RawChunk)
+    where
+        Self: Sized,
+    {
+        *chunk = self.into_raw_chunk();
+    }
 }

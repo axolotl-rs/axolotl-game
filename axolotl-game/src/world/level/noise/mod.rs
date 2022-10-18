@@ -72,7 +72,7 @@ impl<'game> ChunkGenerator<'game> for NoiseGenerator<'game> {
         let chunk = AxolotlChunk {
             chunk_x,
             chunk_z,
-            blocks: Default::default(),
+            sections: Default::default(),
         };
 
         let _context = ChunkContext {

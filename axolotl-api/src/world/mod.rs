@@ -22,14 +22,41 @@ pub struct BlockPosition {
     pub y: i16,
     pub z: i64,
 }
+
 impl BlockPosition {
     pub fn new(x: i64, y: i16, z: i64) -> Self {
         Self { x, y, z }
     }
+    pub fn absolute(&self) -> Self {
+        Self {
+            x: self.x * 16,
+            y: self.y,
+            z: self.z * 16,
+        }
+    }
+    pub fn absolute_ref(&mut self) {
+        self.x *= 16;
+        self.z *= 16;
+    }
+    pub fn make_relative_ref(&mut self) {
+        self.x = self.x % 16;
+        self.z = self.z % 16;
+    }
+    #[inline(always)]
+    pub fn section(&mut self) -> usize {
+        let section_index = ((self.y as usize) / 16);
+        self.y %= 16;
+        section_index
+    }
+    /// Returns the chunk position of the chunk this block is in
+    /// Makes the x.y relative to the chunk
+    #[inline(always)]
     pub fn chunk(&mut self) -> ChunkPos {
+        let x = (self.x / 16);
+        let z = (self.z / 16);
         self.x %= 16;
         self.z %= 16;
-        ChunkPos::new(self.x / 16, self.z / 16)
+        ChunkPos::new(x, z)
     }
 }
 impl<L: Location> From<L> for BlockPosition {
@@ -64,4 +91,14 @@ pub trait World: Send + Sync + Hash + Debug {
     fn generator(&self) -> &Self::NoiseGenerator;
 
     fn set_block(&self, location: BlockPosition, block: Self::WorldBlock);
+    ///
+    /// Rules for the group set chunk
+    /// 1. They must all be in the same chunk
+    /// 2. The chunk must be loaded
+    /// 3. BlockPos must already be relative to the chunk
+    fn set_blocks(
+        &self,
+        chunk_pos: ChunkPos,
+        blocks: impl Iterator<Item = (BlockPosition, Self::WorldBlock)>,
+    );
 }

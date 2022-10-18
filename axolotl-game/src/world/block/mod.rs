@@ -46,6 +46,14 @@ pub enum MinecraftBlock {
     GenericBlock(NameSpaceRef<'static>, GenericBlock),
     DynBlock(Box<dyn AxolotlBlock<State = MapState, PlacedBlock = PlacedBlock>>),
 }
+impl MinecraftBlock {
+    pub fn id(&self) -> usize {
+        match self {
+            MinecraftBlock::Air => 0,
+            _ => todo!(),
+        }
+    }
+}
 
 impl Item for MinecraftBlock {
     fn get_namespace(&self) -> NameSpaceRef<'static> {

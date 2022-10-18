@@ -1,7 +1,7 @@
 use std::hash::Hash;
 use std::ops::{Add, Sub};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub struct ChunkPos(i64);
 impl PartialEq<(i64, i64)> for ChunkPos {
     fn eq(&self, (cx, cz): &(i64, i64)) -> bool {

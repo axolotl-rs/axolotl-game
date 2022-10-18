@@ -1,4 +1,7 @@
 pub mod world;
+
+pub use flume::{Receiver, Sender};
+
 #[test]
 pub fn test_build() {
     println!("test_build");
@@ -19,6 +22,12 @@ macro_rules! get_type {
         }
     };
 }
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error(transparent)]
+    IO(#[from] std::io::Error),
+}
+
 use crate::world::block::MinecraftBlock;
 use crate::world::generator::AxolotlDensityLoader;
 use crate::world::perlin::GameNoise;
@@ -31,6 +40,7 @@ use axolotl_api::OwnedNameSpaceKey;
 pub(crate) use get_type;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use thiserror::Error;
 
 pub struct AxolotlGame {
     pub registries: AxolotlDataRegistries,
