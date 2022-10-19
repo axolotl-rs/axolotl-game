@@ -23,3 +23,5 @@ itoa = "1"
 ahash = "0.8"
 dumbledore = { git = "https://github.com/wyatt-herkamp/Dumbledore.git", features = ["dumbledore-macro"] }
 tokio = { version = "1", features = ["full"] }
+bytemuck = { version = "1.12", features = ["derive"] }
+axolotl-nbt = { git = "https://github.com/axolotl-rs/axolotl-nbt.git", features = ["value", "serde"] }

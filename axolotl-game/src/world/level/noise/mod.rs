@@ -1,21 +1,24 @@
-use crate::world::chunk::{AxolotlChunk, PlacedBlock};
+use crate::world::chunk::{consts, AxolotlChunk};
 
+use crate::world::chunk::placed_block::PlacedBlock;
+use crate::world::chunk::section::AxolotlChunkSection;
 use crate::world::level::biome_source::BiomeSourceSettings;
 use crate::{AxolotlGame, GameNoise};
 use axolotl_api::game::{DataRegistries, Game, Registries, Registry};
 use axolotl_api::item::block::{Block, BlockState, BlockStateValue};
+use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_api::world_gen::noise::density::{DensityContext, Function};
 use axolotl_api::world_gen::noise::{ChunkGenerator, NameSpaceKeyOrType, NoiseSetting};
 use axolotl_api::OwnedNameSpaceKey;
 use std::collections::HashMap;
 
 pub struct ChunkContext {
-    pub chunk_x: i64,
-    pub chunk_z: i64,
+    pub chunk_x: i32,
+    pub chunk_z: i32,
     pub y: i16,
 }
 impl DensityContext for ChunkContext {
-    fn get_x(&self) -> i64 {
+    fn get_x(&self) -> i32 {
         self.chunk_x
     }
 
@@ -23,7 +26,7 @@ impl DensityContext for ChunkContext {
         self.y
     }
 
-    fn get_z(&self) -> i64 {
+    fn get_z(&self) -> i32 {
         self.chunk_z
     }
 }
@@ -68,11 +71,16 @@ impl<'game> ChunkGenerator<'game> for NoiseGenerator<'game> {
         }
     }
 
-    fn generate_chunk(&self, chunk_x: i64, chunk_z: i64) -> Self::Chunk {
+    fn generate_chunk(&self, chunk_x: i32, chunk_z: i32) -> Self::Chunk {
+        let mut sections: [AxolotlChunkSection; (consts::Y_SIZE / consts::SECTION_Y_SIZE)] =
+            Default::default();
+        for index in consts::MIN_Y_SECTION..consts::MAX_Y_SECTION {
+            let section = &mut sections[index as usize + 4];
+            section.y = index;
+        }
         let chunk = AxolotlChunk {
-            chunk_x,
-            chunk_z,
-            sections: Default::default(),
+            chunk_pos: ChunkPos::new(chunk_x, chunk_z),
+            sections,
         };
 
         let _context = ChunkContext {

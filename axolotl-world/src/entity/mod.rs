@@ -1,6 +1,7 @@
 use crate::entity::effects::Effect;
 use crate::entity::random_types::{Armor, ArmorDropChances};
 use crate::region::file::RegionFileType;
+
 use axolotl_nbt::axolotl_nbt_macros::ListSerialize;
 use axolotl_nbt::binary::binary_uuid::BinaryUUID;
 use axolotl_nbt::value::NameLessValue;
@@ -34,6 +35,10 @@ impl RegionFileType for RawEntities {
         Self: Sized,
     {
         "entities"
+    }
+
+    fn get_xz(&self) -> (i32, i32) {
+        (self.position.x, self.position.z)
     }
 }
 

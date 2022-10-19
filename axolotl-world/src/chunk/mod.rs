@@ -1,9 +1,11 @@
 use crate::region::file::RegionFileType;
+
 use axolotl_types::{BadNamespacedKeyError, OwnedNameSpaceKey};
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 use std::fmt::Formatter;
+
 use std::str::FromStr;
 
 pub mod compact_array;
@@ -115,7 +117,7 @@ impl<'de> Deserialize<'de> for PaletteItem {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RawChunk {
     #[serde(rename = "DataVersion")]
     pub data_version: i32,
@@ -127,6 +129,7 @@ pub struct RawChunk {
     pub z_pos: i32,
     #[serde(rename = "LastUpdate")]
     pub last_update: i64,
+    #[serde(default)]
     pub sections: Vec<ChunkSection>,
     #[serde(rename = "Lights", default)]
     pub lights: Vec<Vec<i16>>,
@@ -138,6 +141,10 @@ impl RegionFileType for RawChunk {
         Self: Sized,
     {
         "region"
+    }
+
+    fn get_xz(&self) -> (i32, i32) {
+        (self.x_pos, self.z_pos)
     }
 }
 
@@ -152,7 +159,8 @@ pub struct ChunkSection {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockStates {
     #[serde(default)]
-    pub data: Vec<i64>,
+    pub data: Vec<u64>,
+    #[serde(default)]
     pub palette: Vec<PaletteItem>,
 }
 

@@ -1,5 +1,5 @@
 use crate::game::Game;
-use crate::world_gen::chunk::x_z_to_chunk_i64;
+use crate::world_gen::chunk::{into_condensed_location, into_condensed_location_i32};
 use crate::world_gen::noise::density::cache::AtomicF64;
 use crate::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
 use crate::world_gen::noise::density::perlin::Perlin;
@@ -8,14 +8,14 @@ use crate::world_gen::noise::density::{
 };
 use crate::world_gen::noise::Noise;
 use crate::NamespacedKey;
-use std::sync::atomic::{AtomicI64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct TwoDCache<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> {
     pub function: Function<'function, P>,
     pub cache: Arc<AtomicF64>,
-    pub last_value: Arc<AtomicI64>,
+    pub last_value: Arc<AtomicU64>,
 }
 
 impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'function, P>
@@ -40,7 +40,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
     }
 
     fn compute(&self, state: &impl DensityContext) -> f64 {
-        let i = x_z_to_chunk_i64(state.get_x(), state.get_z());
+        let i = into_condensed_location_i32(state.get_x(), state.get_z());
         if self.last_value.load(Ordering::Relaxed) == i {
             self.cache.load(Ordering::Relaxed)
         } else {

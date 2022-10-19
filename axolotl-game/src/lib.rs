@@ -2,10 +2,10 @@ pub mod world;
 
 pub use flume::{Receiver, Sender};
 
+pub struct ChunkPosSplit(i32, i32);
+
 #[test]
-pub fn test_build() {
-    println!("test_build");
-}
+pub fn test_build() {}
 macro_rules! get_type {
     ($map:expr) => {
         if let Some((key, value)) = $map.next_entry::<String, OwnedNameSpaceKey>()? {
@@ -26,6 +26,12 @@ macro_rules! get_type {
 pub enum Error {
     #[error(transparent)]
     IO(#[from] std::io::Error),
+    #[error(transparent)]
+    WorldError(#[from] axolotl_world::Error),
+    #[error(transparent)]
+    NbtError(#[from] axolotl_nbt::NBTError),
+    #[error(transparent)]
+    SerdeError(#[from] serde_impl::Error),
 }
 
 use crate::world::block::MinecraftBlock;
@@ -35,11 +41,14 @@ use crate::world::AxolotlWorld;
 use axolotl_api::game::{DataRegistries, Game, Registries, Registry};
 use axolotl_api::item::block::BlockState;
 use axolotl_api::world_gen::biome::vanilla::DataPackBiome;
+
 use axolotl_api::world_gen::noise::{Noise, NoiseSetting};
 use axolotl_api::OwnedNameSpaceKey;
+use axolotl_nbt::serde_impl;
 pub(crate) use get_type;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+
 use thiserror::Error;
 
 pub struct AxolotlGame {

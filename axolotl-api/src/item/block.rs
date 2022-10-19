@@ -8,7 +8,7 @@ use crate::world_gen::noise::ChunkGenerator;
 use crate::NameSpaceRef;
 
 /// A Generic Block State Type
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BlockStateValue {
     String(String),
     Int(i32),

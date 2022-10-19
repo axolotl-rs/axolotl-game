@@ -1,3 +1,4 @@
+use bytemuck::{Pod, Zeroable};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -15,14 +16,12 @@ mod location;
 pub struct WorldGenerator {
     pub seed: u64,
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Zeroable)]
 pub struct BlockPosition {
     pub x: i64,
     pub y: i16,
     pub z: i64,
 }
-
 impl BlockPosition {
     pub fn new(x: i64, y: i16, z: i64) -> Self {
         Self { x, y, z }
@@ -56,7 +55,7 @@ impl BlockPosition {
         let z = (self.z / 16);
         self.x %= 16;
         self.z %= 16;
-        ChunkPos::new(x, z)
+        ChunkPos::new(x as i32, z as i32)
     }
 }
 impl<L: Location> From<L> for BlockPosition {

@@ -113,6 +113,7 @@ pub mod one_param {
         BuildDefResult, DensityContext, DensityFunction, DensityState, Function,
     };
     use crate::world_gen::noise::Noise;
+    use axolotl_types::NamespacedKey;
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum OneArgBuiltInFunctionType {
@@ -178,7 +179,7 @@ pub mod one_param {
                 mut arguments,
             } = value
             {
-                match name.key.as_str() {
+                match name.get_key() {
                     "abs" => Ok(OneParamDefinition {
                         fun_type: OneArgBuiltInFunctionType::Abs,
                         one: arguments.remove("argument").unwrap(),
@@ -216,6 +217,7 @@ pub mod one_param {
 }
 
 pub mod two_param {
+    use axolotl_types::NamespacedKey;
     use std::borrow::Cow;
 
     use serde_json::Value;
@@ -274,7 +276,7 @@ pub mod two_param {
                 mut arguments,
             } = parent
             {
-                match name.key.as_str() {
+                match name.get_key() {
                     "add" => Ok(TwoParamDefinition {
                         fun_type: TwoParamBuiltInFunctionType::Add,
                         one: arguments.remove("argument1").unwrap(),

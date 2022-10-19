@@ -1,74 +1,66 @@
+use bytemuck::{Contiguous, Pod, Zeroable};
+use serde::{Deserialize, Serialize};
 use std::hash::Hash;
 use std::ops::{Add, Sub};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
-pub struct ChunkPos(i64);
-impl PartialEq<(i64, i64)> for ChunkPos {
-    fn eq(&self, (cx, cz): &(i64, i64)) -> bool {
-        let (x, z) = self.as_xz();
-        x == *cx && z == *cz
-    }
+#[inline(always)]
+pub fn into_condensed_location(x: i64, z: i64) -> u64 {
+    ((x as u64 & 4294967295) | (z as u64 & 4294967295) << 32)
 }
-impl Hash for ChunkPos {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
-    }
+#[inline(always)]
+pub fn into_condensed_location_i32(x: i32, z: i32) -> u64 {
+    ((x as u64 & 4294967295) | (z as u64 & 4294967295) << 32)
 }
-
-impl Add for ChunkPos {
-    type Output = Self;
-    fn add(self, rhs: Self) -> Self::Output {
-        let (x, z) = self.as_xz();
-        let (x2, z2) = rhs.as_xz();
-        Self::new(x + x2, z + z2)
-    }
-}
-impl Sub for ChunkPos {
-    type Output = Self;
-    fn sub(self, rhs: Self) -> Self::Output {
-        let (x, z) = self.as_xz();
-        let (x2, z2) = rhs.as_xz();
-        Self::new(x - x2, z - z2)
-    }
-}
-impl Add<(i64, i64)> for ChunkPos {
-    type Output = Self;
-
-    fn add(self, (x2, z2): (i64, i64)) -> Self::Output {
-        let (x, y) = self.as_xz();
-        Self::new(x + x2, y + z2)
-    }
-}
-impl Sub<(i64, i64)> for ChunkPos {
-    type Output = Self;
-
-    fn sub(self, (x2, z2): (i64, i64)) -> Self::Output {
-        let (x, y) = self.as_xz();
-        Self::new(x - x2, y - z2)
-    }
-}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash, Pod, Zeroable)]
+#[repr(C)]
+pub struct ChunkPos(pub i32, pub i32);
 impl ChunkPos {
-    pub fn new(x: i64, z: i64) -> Self {
-        Self(x_z_to_chunk_i64(x, z))
+    pub fn new(x: i32, z: i32) -> Self {
+        Self(x, z)
     }
-    pub fn x(&self) -> i64 {
-        (self.0 & 0xFFFF_FFFF)
+    #[inline(always)]
+    pub fn x(&self) -> i32 {
+        self.0
     }
-    pub fn z(&self) -> i64 {
-        (self.0 >> 32)
-    }
-    pub fn as_xz(&self) -> (i64, i64) {
-        (self.x(), self.z())
+    #[inline(always)]
+    pub fn z(&self) -> i32 {
+        self.1
     }
 }
-pub fn x_z_to_chunk_i64(x: i64, z: i64) -> i64 {
-    ((x as i64 & 4294967295) | (z as i64 & 4294967295) << 32)
+impl<N: From<i32>> Into<(N, N)> for ChunkPos {
+    fn into(self) -> (N, N) {
+        (self.0.into(), self.1.into())
+    }
 }
+impl Into<(i32, i32)> for &'_ ChunkPos {
+    fn into(self) -> (i32, i32) {
+        (self.0, self.1)
+    }
+}
+impl Into<i64> for ChunkPos {
+    fn into(self) -> i64 {
+        into_condensed_location(self.0 as i64, self.1 as i64) as i64
+    }
+}
+impl Into<u64> for ChunkPos {
+    fn into(self) -> u64 {
+        into_condensed_location(self.0 as i64, self.1 as i64)
+    }
+}
+impl From<i64> for ChunkPos {
+    fn from(value: i64) -> Self {
+        Self(
+            (value & 4294967295) as i32,
+            ((value >> 32) & 4294967295) as i32,
+        )
+    }
+}
+
 #[test]
 pub fn test() {
-    println!("{:#066b}", x_z_to_chunk_i64(0, 0));
-    println!("{:#066b}", x_z_to_chunk_i64(1, 0));
-    println!("{:#066b}", x_z_to_chunk_i64(0, 1));
+    println!("{:#066b}", into_condensed_location(0, 0));
+    println!("{:#066b}", into_condensed_location(1, 0));
+    println!("{:#066b}", into_condensed_location(0, 1));
 
     let pos = ChunkPos::new(32, 64);
     println!("{:#066b}", pos.0);

@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompactArray {
     pub bits_per_block: usize,
     pub data: Vec<u64>,
@@ -9,14 +9,35 @@ pub struct CompactArray {
 
 impl CompactArray {
     pub fn new(bits_per_block: usize, length: usize) -> Self {
-        let values_per_u64 = 64 / bits_per_block;
+        let values_per_u64 = Self::calc_values_per_u64(bits_per_block);
         let data = vec![0; (length + values_per_u64 as usize - 1) / values_per_u64 as usize];
         CompactArray {
             bits_per_block,
             data,
             length,
             values_per_u64,
-            mask: (1 << bits_per_block as u64) - 1,
+            mask: Self::calc_mask(bits_per_block),
+        }
+    }
+    pub fn replace_inner(&mut self, data: Vec<u64>) {
+        self.data = data;
+    }
+    #[inline(always)]
+    pub fn calc_mask(bits_per_block: usize) -> u64 {
+        (1 << bits_per_block as u64) - 1
+    }
+    #[inline(always)]
+    pub fn calc_values_per_u64(bits_per_block: usize) -> usize {
+        64 / bits_per_block
+    }
+    pub fn new_from_vec(bits_per_block: usize, data: Vec<u64>, length: usize) -> Self {
+        let values_per_u64 = Self::calc_values_per_u64(bits_per_block);
+        CompactArray {
+            bits_per_block,
+            length,
+            data,
+            values_per_u64,
+            mask: Self::calc_mask(bits_per_block),
         }
     }
     pub fn get(&self, index: impl CompactArrayIndex) -> Option<u64> {
@@ -34,6 +55,39 @@ impl CompactArray {
         *re &= !(self.mask << offset);
         *re |= value << offset;
     }
+    pub fn iter(&self) -> impl Iterator<Item = u64> + '_ {
+        Self::iter_vec(
+            &self.data,
+            self.values_per_u64,
+            self.bits_per_block,
+            self.mask,
+        )
+    }
+
+    pub fn iter_vec(
+        data: &Vec<u64>,
+        values_per_u64: usize,
+        bits_per_block: usize,
+        mask: u64,
+    ) -> impl Iterator<Item = u64> + '_ {
+        data.iter()
+            .flat_map(move |x| (0..values_per_u64).map(move |i| (x >> (i * bits_per_block)) & mask))
+    }
+    pub fn iter_vec_with_location(
+        data: &Vec<u64>,
+        values_per_u64: usize,
+        bits_per_block: usize,
+        mask: u64,
+    ) -> impl Iterator<Item = (u64, u64)> + '_ {
+        data.iter().enumerate().flat_map(move |(data_index, x)| {
+            let index_location = data_index * values_per_u64;
+            (0..values_per_u64).map(move |i| {
+                let value = (x >> (i * bits_per_block)) & mask;
+                let location = ((index_location + i) / bits_per_block) as u64;
+                return (value, location);
+            })
+        })
+    }
     #[inline]
     fn index_bit_value(&self, index: usize) -> (usize, usize) {
         let list_index = (index / self.values_per_u64) as usize;
@@ -45,7 +99,6 @@ impl CompactArray {
 pub trait CompactArrayIndex {
     fn get(self) -> usize;
 }
-
 impl CompactArrayIndex for u64 {
     #[inline(always)]
     fn get(self) -> usize {

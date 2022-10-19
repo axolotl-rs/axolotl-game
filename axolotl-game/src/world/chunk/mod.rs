@@ -1,65 +1,45 @@
-use ahash::AHashMap;
-use axolotl_api::item::block::Block;
-use axolotl_api::item::Item;
 use axolotl_api::world::BlockPosition;
-use axolotl_api::NameSpaceRef;
+
 use log::warn;
 use parking_lot::RwLock;
 use std::fmt::Debug;
 use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
-use tux_lockfree::map::{Map, ReadGuard, Removed};
+use tux_lockfree::map::{Map, Removed};
 use tux_lockfree::queue::Queue;
 
-use crate::world::block::MapState;
+use crate::world::chunk::section::AxolotlChunkSection;
 use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter};
 use crate::world::ChunkUpdate;
-use crate::{Error, MinecraftBlock};
+use crate::Error;
 use axolotl_api::world_gen::chunk::ChunkPos;
-use axolotl_world::chunk::{ChunkSection, RawChunk};
+use axolotl_world::chunk::RawChunk;
+use axolotl_world::entity::RawEntities;
+use placed_block::PlacedBlock;
 
-#[derive(Debug, Clone)]
-pub struct PlacedBlock {
-    pub state: MapState,
-    pub block: &'static MinecraftBlock,
-}
-impl PlacedBlock {
-    pub fn id(&self) -> usize {
-        self.block.id()
-    }
-}
-impl Item for PlacedBlock {
-    fn get_namespace(&self) -> NameSpaceRef<'static> {
-        self.block.get_namespace()
-    }
-}
+pub mod biome_section;
+mod blocks_section;
+pub mod consts;
+pub mod placed_block;
+pub mod section;
 
-impl Block for PlacedBlock {
-    type State = MapState;
-    type PlacedBlock = Self;
-
-    fn get_default_placed_block(&self) -> Self::PlacedBlock {
-        self.clone()
-    }
-
-    fn get_default_state(&self) -> Self::State {
-        self.state.clone()
-    }
-}
-#[derive(Debug, Clone, Default)]
-pub struct AxolotlChunkSection {}
-impl AxolotlChunkSection {
-    pub fn set_block(&mut self, _pos: BlockPosition, _block: PlacedBlock) {
-        todo!()
-    }
-}
 #[derive(Debug, Clone)]
 pub struct AxolotlChunk {
-    pub chunk_x: i64,
-    pub chunk_z: i64,
-    pub(crate) sections: [AxolotlChunkSection; 18],
+    pub chunk_pos: ChunkPos,
+    pub sections: [AxolotlChunkSection; (consts::Y_SIZE / consts::SECTION_Y_SIZE)],
 }
 impl AxolotlChunk {
+    pub fn new(chunk_pos: ChunkPos) -> Self {
+        let mut sections: [AxolotlChunkSection; (consts::Y_SIZE / consts::SECTION_Y_SIZE)] =
+            Default::default();
+        for index in consts::MIN_Y_SECTION..consts::MAX_Y_SECTION {
+            let section = &mut sections[index as usize + 4];
+            section.y = index;
+        }
+        Self {
+            chunk_pos,
+            sections,
+        }
+    }
     pub fn set_block(&mut self, mut pos: BlockPosition, block: PlacedBlock) {
         let id = pos.section();
         if id >= self.sections.len() {
@@ -67,10 +47,14 @@ impl AxolotlChunk {
             return;
         }
         let section = &mut self.sections[id];
-        section.set_block(pos, block);
+        section.blocks.set_block(pos, block);
     }
 }
 impl IntoRawChunk for AxolotlChunk {
+    fn load_from_chunk(&mut self, _chunk: &mut RawChunk, _entities: Option<&mut RawEntities>) {
+        todo!()
+    }
+
     fn into_raw_chunk(self) -> RawChunk {
         todo!("into_raw_chunk")
     }
@@ -80,11 +64,10 @@ pub struct ChunkHandle {
     pub value: RwLock<AxolotlChunk>,
     pub loaded: AtomicBool,
 }
-
 #[derive(Debug)]
 pub struct ChunkMap<V: LevelReader + LevelWriter + Debug> {
-    // TODO make version of lockfree map that is meant for inner mutable types
     pub thread_safe_chunks: Map<ChunkPos, ChunkHandle>,
+    pub dead_chunks: Queue<AxolotlChunk>,
     // Load Queue
     pub queue: Queue<ChunkUpdate>,
     pub accessor: V,
@@ -114,7 +97,7 @@ where
         Ok(())
     }
     #[inline(always)]
-    pub fn unload_chunk(&self, x: i64, z: i64) -> Result<(), Error> {
+    pub fn unload_chunk(&self, x: i32, z: i32) -> Result<(), Error> {
         if let Some(value) = self.thread_safe_chunks.remove(&ChunkPos::new(x, z)) {
             let (pos, chunk) = match Removed::try_into(value) {
                 Ok((pos, v)) => {
@@ -140,10 +123,25 @@ where
     #[inline(always)]
     pub fn load_chunk(
         &self,
-        x: i64,
-        z: i64,
+        x: i32,
+        z: i32,
         update: Option<(BlockPosition, PlacedBlock)>,
     ) -> Result<(), Error> {
-        todo!("Load chunk");
+        let mut chunk = if let Some(dead) = self.dead_chunks.pop() {
+            dead
+        } else {
+            AxolotlChunk::new(ChunkPos::new(x, z))
+        };
+        let pos = ChunkPos(x, z);
+        self.accessor.get_chunk_into(&pos, &mut chunk)?;
+        if let Some((pos, block)) = update {
+            chunk.set_block(pos, block);
+        }
+        let handle = ChunkHandle {
+            value: RwLock::new(chunk),
+            loaded: AtomicBool::new(true),
+        };
+        self.thread_safe_chunks.insert(pos, handle);
+        Ok(())
     }
 }

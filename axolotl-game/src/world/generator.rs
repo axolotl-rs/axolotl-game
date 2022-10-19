@@ -38,7 +38,7 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
         todo!()
     }
 
-    fn generate_chunk(&self, _chunk_x: i64, _chunk_z: i64) -> Self::Chunk {
+    fn generate_chunk(&self, _chunk_x: i32, _chunk_z: i32) -> Self::Chunk {
         todo!()
     }
 }

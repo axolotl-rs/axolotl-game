@@ -6,7 +6,9 @@ use crate::world::axolotl::level_dat::AxolotlLevelDat;
 use crate::world::World;
 use axolotl_nbt::serde_impl;
 use axolotl_types::OwnedNameSpaceKey;
+
 use std::collections::HashMap;
+
 use std::path::PathBuf;
 use thiserror::Error;
 use uuid::Uuid;
@@ -20,7 +22,7 @@ pub enum AxolotlWorldError {
     #[error("Missing Axolotl Required Param: {0}")]
     MissingAxolotlParam(&'static str),
 }
-
+#[derive(Debug, Clone)]
 pub struct AxolotlWorld {
     pub world_folder: PathBuf,
     pub player_folder: PathBuf,

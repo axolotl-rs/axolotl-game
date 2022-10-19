@@ -93,7 +93,7 @@ impl RegionHeader {
         Ok(())
     }
     /// This function will clear the header
-    pub fn write_region<Writer: Write>(&mut self, writer: &mut Writer) -> Result<(), Error> {
+    pub fn write_region<Writer: Write>(&self, writer: &mut Writer) -> Result<(), Error> {
         if self.locations.len() != 1024 {
             return Err(Error::InvalidChunkHeader("locations"));
         }
@@ -101,7 +101,7 @@ impl RegionHeader {
             return Err(Error::InvalidChunkHeader("timestamps"));
         }
         for location in self.locations.iter() {
-            writer.write_u32::<BigEndian>(location.0)?;
+            writer.write_u24::<BigEndian>(location.0)?;
             writer.write_u8(location.1)?;
         }
         for timestamp in self.timestamps.iter() {
@@ -114,7 +114,7 @@ impl RegionHeader {
         let mut locations = Vec::with_capacity(1024);
         let mut timestamps = Vec::with_capacity(1024);
         for _ in 0..1024 {
-            let offset = reader.read_u32::<BigEndian>()?;
+            let offset = reader.read_u24::<BigEndian>()?;
             let sector_count = reader.read_u8()?;
             locations.push(RegionLocation(offset, sector_count));
         }
@@ -144,6 +144,14 @@ impl RegionHeader {
             *timestamp = reader.read_u32::<BigEndian>()?;
         }
         Ok(())
+    }
+    #[inline(always)]
+    pub fn get_index(v: impl Into<(i32, i32)>) -> i32 {
+        let (x, z) = v.into();
+        ((x % 32) + (z % 32) * 32) * 4
+    }
+    pub fn get_chunk_location(&self, v: impl Into<(i32, i32)>) -> Option<&RegionLocation> {
+        self.locations.get(Self::get_index(v) as usize)
     }
 }
 

@@ -1,7 +1,6 @@
 use ahash::{AHashMap, AHashSet};
 use dumbledore::entities::entity::{Entity, EntityLocation};
 use log::{debug, warn};
-use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -9,61 +8,47 @@ use tux_lockfree::queue::Queue;
 
 use uuid::Uuid;
 
-use crate::AxolotlGame;
 use axolotl_api::item::block::BlockState;
 use axolotl_api::world::{BlockPosition, World};
 use axolotl_api::world_gen::chunk::ChunkPos;
 
-use crate::world::chunk::{AxolotlChunk, ChunkMap, PlacedBlock};
-use crate::world::entity::player::{Chunks, GamePlayer};
+use crate::world::chunk::{AxolotlChunk, ChunkMap};
+use crate::world::entity::player::GamePlayer;
 use crate::world::entity::MinecraftEntity;
 use crate::world::generator::AxolotlGenerator;
-use crate::world::level::accessor::PlayerAccess;
-use crate::world::level::configs::{WorldConfig, WorldGrouping};
+use crate::world::level::configs::WorldConfig;
 use axolotl_world::entity::player::PlayerData;
+use chunk::placed_block::PlacedBlock;
 use dumbledore::world::World as ECSWorld;
 use entity::player::PlayerUpdate;
+
 pub mod block;
 pub mod chunk;
 pub mod entity;
 pub mod generator;
 pub mod level;
 pub mod perlin;
+mod resource_pool;
+
 use crate::world::entity::properties::Location;
+use crate::world::level::accessor::v_19::player::Minecraft19PlayerAccess;
 use crate::world::level::accessor::v_19::Minecraft19WorldAccessor;
 use crate::Sender;
-
-pub trait WorldResourcePool {
-    type PlayerAccess: PlayerAccess;
-    fn world_group(&self) -> &WorldGrouping;
-
-    fn player_access(&self) -> &Self::PlayerAccess;
-}
-pub struct SharedWorldResourcePool<'game> {
-    pub worlds: Vec<AxolotlWorld<'game>>,
-}
-pub struct OwnedWorldResourcePool<'game> {
-    pub world: AxolotlWorld<'game>,
-}
-pub enum GenericWorldResourcePool<'game> {
-    Shared(SharedWorldResourcePool<'game>),
-    Owned(OwnedWorldResourcePool<'game>),
-}
 
 #[derive(Debug)]
 pub enum ChunkUpdate {
     Unload {
-        x: i64,
-        z: i64,
+        x: i32,
+        z: i32,
     },
     Load {
-        x: i64,
-        z: i64,
+        x: i32,
+        z: i32,
         set_block: Option<(BlockPosition, PlacedBlock)>,
     },
 }
 impl ChunkUpdate {
-    pub fn get_region(&self) -> (i64, i64) {
+    pub fn get_region(&self) -> (i32, i32) {
         match self {
             ChunkUpdate::Unload { x, z } => (*x >> 5, *z >> 5),
             ChunkUpdate::Load { x, z, .. } => (*x >> 5, *z >> 5),
@@ -80,22 +65,37 @@ impl Hash for WorldPlayer {
         self.location.index.hash(state);
     }
 }
-
+#[derive(Debug, Clone)]
+pub struct ChunkTickets {
+    pub tickets: AHashMap<ChunkPos, AHashSet<Entity>>,
+}
+impl ChunkTickets {
+    pub fn find_chunks_to_unload<UC>(&mut self, unload_chunk: UC)
+    where
+        UC: Fn(ChunkPos),
+    {
+        for (pos, tickets) in self.tickets.iter() {
+            if tickets.is_empty() {
+                unload_chunk(*pos);
+            }
+        }
+    }
+}
 #[derive(Debug)]
 pub struct AxolotlWorld<'game> {
-    pub game: &'game AxolotlGame,
     pub uuid: Uuid,
     pub name: String,
-    pub generator: Box<AxolotlGenerator<'game>>,
+    pub generator: AxolotlGenerator<'game>,
     pub world_config: WorldConfig,
-    pub player_entities: AHashMap<Entity, WorldPlayer>,
+    pub clients: AHashMap<Entity, WorldPlayer>,
     pub render_distance: u8,
     pub simulation_distance: u8,
     pub entities: Vec<MinecraftEntity>,
     pub game_world: ECSWorld,
-    pub chunk_map: ChunkMap<Minecraft19WorldAccessor>,
-    pub tracked_chunks: AHashMap<ChunkPos, AHashSet<Entity>>,
+    pub chunk_map: Arc<ChunkMap<Minecraft19WorldAccessor>>,
+    pub chunk_tickets: ChunkTickets,
     pub new_players: Queue<(Entity, WorldPlayer)>,
+    pub player_access: Arc<Minecraft19PlayerAccess>,
 }
 impl<'game> AxolotlWorld<'game> {
     pub fn load_player(&self, player: Sender<Arc<PlayerUpdate>>, nbt: PlayerData) {
@@ -116,15 +116,15 @@ impl<'game> AxolotlWorld<'game> {
     /// If None we will assume it used a portal and will fall back on Game Logic
     pub fn load_player_from_tp(
         &self,
-        player: Sender<Arc<PlayerUpdate>>,
-        game_player: GamePlayer,
-        location: Option<Location>,
+        _player: Sender<Arc<PlayerUpdate>>,
+        _game_player: GamePlayer,
+        _location: Option<Location>,
     ) {
     }
 
     pub(crate) fn send_block_update(&self, pos: BlockPosition, block: usize) {
-        let chunk_x = pos.x / 16;
-        let chunk_z = pos.z / 16;
+        let chunk_x = pos.x as i32 / 16;
+        let chunk_z = pos.z as i32 / 16;
         let pos1 = ChunkPos::new(chunk_x, chunk_z);
         let update = Arc::new(PlayerUpdate::UpdateBlock(pos, block));
 
@@ -136,7 +136,9 @@ impl<'game> AxolotlWorld<'game> {
         blocks: impl Iterator<Item = (BlockPosition, usize)>,
     ) {
         let mut section_updates: AHashMap<i64, Vec<i64>> = AHashMap::with_capacity(16);
-        let (chunk_x, chunk_y) = chunk.as_xz();
+        let (chunk_x, chunk_y): (i32, i32) = chunk.into();
+        let chunk_x = chunk_x as i64;
+        let chunk_y = chunk_y as i64;
         for (pos, id) in blocks {
             let id = id as i64;
             let section_pos =
@@ -153,9 +155,9 @@ impl<'game> AxolotlWorld<'game> {
         self.push_update_to_players_at(chunk, update);
     }
     pub fn push_update_to_players_at(&self, chunk: ChunkPos, update: Arc<PlayerUpdate>) {
-        if let Some(entities) = self.tracked_chunks.get(&chunk) {
+        if let Some(entities) = self.chunk_tickets.tickets.get(&chunk) {
             for player in entities {
-                if let Some(player) = self.player_entities.get(player) {
+                if let Some(player) = self.clients.get(player) {
                     if let Err(error) = player.sender.send(update.clone()) {
                         warn!("Failed to send chunk update to player: {}", error);
                     }
@@ -188,10 +190,10 @@ impl<'game> World for AxolotlWorld<'game> {
     fn tick(&mut self) {}
 
     fn generator(&self) -> &Self::NoiseGenerator {
-        self.generator.as_ref()
+        &self.generator
     }
 
-    fn set_block(&self, mut location: BlockPosition, block: PlacedBlock) {
+    fn set_block(&self, location: BlockPosition, block: PlacedBlock) {
         let mut relative_pos = location.clone();
         let position = (relative_pos).chunk();
         let id = block.id();

@@ -1,22 +1,22 @@
 pub mod material;
 
-use crate::world::chunk::PlacedBlock;
+use crate::world::chunk::placed_block::PlacedBlock;
 use crate::AxolotlWorld;
 use axolotl_api::item::block::{Block, BlockState, BlockStateValue};
 use axolotl_api::item::Item;
 use axolotl_api::world::BlockPosition;
-use axolotl_api::NameSpaceRef;
+use axolotl_api::{NameSpaceRef, NamespacedKey};
 
-use std::collections::HashMap;
+use ahash::AHashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MapState {
-    pub map: HashMap<String, BlockStateValue>,
+    pub map: AHashMap<String, BlockStateValue>,
 }
 impl Default for MapState {
     fn default() -> Self {
         Self {
-            map: HashMap::new(),
+            map: AHashMap::new(),
         }
     }
 }
@@ -40,13 +40,19 @@ pub trait AxolotlBlock: Block {
         // By default, do nothing
     }
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum MinecraftBlock {
     Air,
     GenericBlock(NameSpaceRef<'static>, GenericBlock),
-    DynBlock(Box<dyn AxolotlBlock<State = MapState, PlacedBlock = PlacedBlock>>),
+    //DynBlock(Box<dyn AxolotlBlock<State = MapState, PlacedBlock = PlacedBlock>>),
 }
 impl MinecraftBlock {
+    pub fn from_id(_id: impl Into<u64>) -> Option<&'static MinecraftBlock> {
+        todo!("Define via magic(a macro)")
+    }
+    pub fn from_namespace(_id: &impl NamespacedKey) -> Option<&'static MinecraftBlock> {
+        todo!("Define via magic(a macro)")
+    }
     pub fn id(&self) -> usize {
         match self {
             MinecraftBlock::Air => 0,
@@ -60,7 +66,7 @@ impl Item for MinecraftBlock {
         match self {
             MinecraftBlock::Air => NameSpaceRef::new("minecraft", "air"),
             MinecraftBlock::GenericBlock(key, _) => key.clone(),
-            MinecraftBlock::DynBlock(v) => v.get_namespace(),
+            //MinecraftBlock::DynBlock(v) => v.get_namespace(),
         }
     }
 }
@@ -79,16 +85,11 @@ impl Block for &'static MinecraftBlock {
                 state: MapState::default(),
                 block: self,
             },
-            MinecraftBlock::DynBlock(v) => PlacedBlock {
-                state: v.get_default_state(),
-                block: self,
-            },
         }
     }
 
     fn get_default_state(&self) -> Self::State {
         match self {
-            MinecraftBlock::DynBlock(v) => v.get_default_state(),
             _ => MapState::default(),
         }
     }
@@ -96,12 +97,11 @@ impl Block for &'static MinecraftBlock {
 impl AxolotlBlock for &'static MinecraftBlock {
     fn on_block_placed(
         &self,
-        block_state: &Self::State,
-        location: &BlockPosition,
-        world: &AxolotlWorld,
+        _block_state: &Self::State,
+        _location: &BlockPosition,
+        _world: &AxolotlWorld,
     ) {
         match self {
-            MinecraftBlock::DynBlock(v) => v.on_block_placed(block_state, location, world),
             _ => {}
         }
     }
@@ -109,7 +109,7 @@ impl AxolotlBlock for &'static MinecraftBlock {
 
 impl<Ab: AxolotlBlock> AxolotlBlock for Box<Ab> {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockProperties {}
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GenericBlock(BlockProperties);

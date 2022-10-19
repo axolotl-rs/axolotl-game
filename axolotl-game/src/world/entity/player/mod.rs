@@ -19,7 +19,7 @@ pub struct GamePlayer {
     pub position: Location,
 }
 impl From<PlayerData> for GamePlayer {
-    fn from(data: PlayerData) -> Self {
+    fn from(_data: PlayerData) -> Self {
         todo!()
     }
 }

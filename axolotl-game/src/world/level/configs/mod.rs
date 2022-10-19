@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorldsConfig {
     pub groups: Vec<WorldGrouping>,
     /// If undefined a plugin will have to handle this
@@ -11,14 +11,14 @@ pub struct WorldsConfig {
 }
 
 /// A grouping will share the same player data and resources
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorldGrouping {
     pub worlds: HashMap<Uuid, WorldConfig>,
     /// From world name to world uuid
     pub nether_portal_rules: HashMap<Uuid, Uuid>,
     pub end_portal_rules: HashMap<Uuid, Uuid>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorldConfig {
     pub name: String,
     pub path: PathBuf,

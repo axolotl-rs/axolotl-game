@@ -223,7 +223,6 @@ pub mod tests {
     use crate::world_gen::noise::density::loading::FunctionArgument;
     use std::fs::{read_dir, read_to_string};
     use std::path::PathBuf;
-    use tabled::Table;
 
     #[test]
     pub fn test() {
