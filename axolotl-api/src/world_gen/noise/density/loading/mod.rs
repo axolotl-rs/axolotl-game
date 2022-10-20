@@ -31,7 +31,11 @@ macro_rules! get_noise {
     ($noise:expr, $game:ident) => {
         match $noise {
             NameSpaceKeyOrType::NameSpaceKey(key) => {
-                if let Some(value) = $game.data_registries().get_noise_registry().get(&key) {
+                if let Some(value) = $game
+                    .data_registries()
+                    .get_noise_registry()
+                    .get_by_namespace_key(&key)
+                {
                     value.clone()
                 } else {
                     // TODO error

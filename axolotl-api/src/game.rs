@@ -74,8 +74,17 @@ macro_rules! data_registries {
     };
 }
 data_registries!(Noise, noise, NoiseSetting, noise_setting);
-pub trait Registry<T> {
-    fn register(&mut self, namespace: OwnedNameSpaceKey, item: T);
 
-    fn get(&self, key: &OwnedNameSpaceKey) -> Option<&T>;
+pub trait Registry<T> {
+    fn register(&mut self, namespace: impl Into<String>, item: T) -> usize;
+    fn register_with_id(&mut self, namespace: impl Into<String>, id: usize, item: T);
+
+    fn get_by_id(&self, id: usize) -> Option<&T>;
+
+    fn get_id(&self, namespace: impl AsRef<str>) -> Option<usize>;
+
+    fn get_by_namespace(&self, namespace: impl AsRef<str>) -> Option<&T>;
+    fn get_by_namespace_key(&self, key: &OwnedNameSpaceKey) -> Option<&T> {
+        self.get_by_namespace(key.to_string())
+    }
 }

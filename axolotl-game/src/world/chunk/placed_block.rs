@@ -1,13 +1,13 @@
-use crate::world::block::{MapState, MinecraftBlock};
-use crate::world::chunk::section::InvalidChunkSection;
 use axolotl_api::item::block::Block;
 use axolotl_api::item::Item;
-use axolotl_api::{NameSpaceRef, NamespacedKey, OwnedNameSpaceKey};
+use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
+use axolotl_items::blocks::generic_block::VanillaState;
+use axolotl_items::blocks::MinecraftBlock;
 use axolotl_world::chunk::PaletteItem;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlacedBlock<'game> {
-    pub state: MapState,
+    pub state: VanillaState,
     pub block: &'game MinecraftBlock,
 }
 impl Into<PaletteItem> for PlacedBlock<'_> {
@@ -26,7 +26,7 @@ impl Into<PaletteItem> for PlacedBlock<'_> {
 impl Default for PlacedBlock<'_> {
     fn default() -> Self {
         Self {
-            state: MapState::default(),
+            state: VanillaState::default(),
             block: &MinecraftBlock::Air,
         }
     }

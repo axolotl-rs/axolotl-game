@@ -1,24 +1,33 @@
 use crate::Error;
 use ahash::AHashMap;
 use axolotl_api::game::Registry;
-use axolotl_api::OwnedNameSpaceKey;
 use log::warn;
 use serde::de::DeserializeOwned;
 use std::path::Path;
 
 #[derive(Debug, Default)]
-pub struct SimpleRegistry<T: DeserializeOwned> {
-    pub map: AHashMap<String, T>,
+pub struct SimpleRegistry<T> {
+    pub key_map: AHashMap<String, usize>,
+    pub values: Vec<T>,
+    pub next_id: usize,
 }
-
+impl<T> SimpleRegistry<T> {
+    pub fn new() -> Self {
+        Self {
+            key_map: Default::default(),
+            values: vec![],
+            next_id: 0,
+        }
+    }
+}
 impl<T: DeserializeOwned> SimpleRegistry<T> {
     pub fn load_from_path(path: impl AsRef<Path>) -> Result<Self, Error> {
+        let mut registry = SimpleRegistry::new();
         let path = path.as_ref();
         if !path.is_dir() {
             warn!("Path {:?} is not a directory", path);
             return Ok(Self::new());
         }
-        let mut map = AHashMap::new();
         for entry in std::fs::read_dir(path)? {
             let entry = entry?;
             let path = entry.path();
@@ -37,7 +46,7 @@ impl<T: DeserializeOwned> SimpleRegistry<T> {
                         continue;
                     }
                     Some(v) => {
-                        Self::load_sub_path(path, v, &mut map)?;
+                        Self::load_sub_path(path, v, &mut registry)?;
                     }
                 }
             } else if let Some(name) = name {
@@ -49,17 +58,17 @@ impl<T: DeserializeOwned> SimpleRegistry<T> {
                         continue;
                     }
                 };
-                map.insert(format!("minecraft:{name}"), value);
+                registry.register(format!("minecraft:{name}"), value);
             } else {
                 warn!("Skipping file {:?}", path);
             }
         }
-        Ok(Self { map })
+        Ok(registry)
     }
     fn load_sub_path(
         sub_path: impl AsRef<Path>,
         parent: String,
-        data: &mut AHashMap<String, T>,
+        data: &mut SimpleRegistry<T>,
     ) -> Result<(), Error> {
         for file in std::fs::read_dir(sub_path)? {
             let file = file?;
@@ -97,7 +106,7 @@ impl<T: DeserializeOwned> SimpleRegistry<T> {
                             continue;
                         }
                     };
-                    data.insert(format!("minecraft:{parent}/{name}"), file);
+                    data.register(format!("minecraft:{parent}/{name}"), file);
                 } else {
                     warn!("Found a file without a name at {:?}", file.path());
                 }
@@ -105,19 +114,42 @@ impl<T: DeserializeOwned> SimpleRegistry<T> {
         }
         Ok(())
     }
-    pub fn new() -> Self {
-        Self {
-            map: AHashMap::new(),
-        }
-    }
 }
 
-impl<T: DeserializeOwned> Registry<T> for SimpleRegistry<T> {
-    fn register(&mut self, namespace: OwnedNameSpaceKey, item: T) {
-        self.map.insert(namespace.to_string(), item);
+impl<T> Registry<T> for SimpleRegistry<T> {
+    fn register(&mut self, namespace: impl Into<String>, item: T) -> usize {
+        let namespace = namespace.into();
+        let id = self.next_id;
+        self.next_id += 1;
+        self.key_map.insert(namespace.into(), id);
+        self.values.push(item);
+        id
     }
 
-    fn get(&self, key: &OwnedNameSpaceKey) -> Option<&T> {
-        self.map.get(&key.to_string())
+    fn register_with_id(&mut self, namespace: impl Into<String>, id: usize, item: T) {
+        if id != self.next_id {
+            if id < self.next_id {
+                warn!("Tried to register an item with an id that is already taken");
+            } else {
+                todo!("Handle registering an item with an id that is too high");
+            }
+        }
+        self.key_map.insert(namespace.into(), self.next_id);
+        self.values.push(item);
+        self.next_id += 1;
+    }
+
+    fn get_by_id(&self, id: usize) -> Option<&T> {
+        self.values.get(id)
+    }
+
+    fn get_id(&self, namespace: impl AsRef<str>) -> Option<usize> {
+        self.key_map.get(namespace.as_ref()).copied()
+    }
+
+    fn get_by_namespace(&self, namespace: impl AsRef<str>) -> Option<&T> {
+        self.key_map
+            .get(namespace.as_ref())
+            .and_then(|id| self.values.get(*id))
     }
 }

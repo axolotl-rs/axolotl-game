@@ -1,4 +1,3 @@
-use crate::world::block::MinecraftBlock;
 use crate::world::chunk::consts::{
     BITS_PER_BLOCK, SECTION_SIZE, SECTION_X_SIZE, SECTION_Y_SIZE, SECTION_Z_SIZE,
 };
@@ -7,6 +6,7 @@ use crate::world::chunk::section::{InvalidChunkSection, SectionPosIndex};
 
 use crate::AxolotlGame;
 use axolotl_api::NameSpaceRef;
+use axolotl_items::blocks::MinecraftBlock;
 use axolotl_world::chunk::compact_array::CompactArray;
 use axolotl_world::chunk::BlockStates;
 use log::warn;

@@ -1,6 +1,5 @@
 pub mod v_19;
 
-use crate::world::block::AxolotlBlock;
 use crate::AxolotlGame;
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_world::chunk::RawChunk;

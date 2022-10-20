@@ -1,5 +1,8 @@
 use axolotl_game::GameConfig;
+use log::warn;
 use std::path::PathBuf;
+use std::thread::sleep;
+
 #[test]
 pub fn load_game() {
     simple_log::quick!();

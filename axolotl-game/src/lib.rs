@@ -1,3 +1,5 @@
+extern crate core;
+
 mod registry;
 pub mod world;
 
@@ -37,7 +39,6 @@ pub enum Error {
     JsonError(#[from] serde_json::Error),
 }
 
-use crate::world::block::MinecraftBlock;
 use crate::world::generator::AxolotlDensityLoader;
 use crate::world::perlin::GameNoise;
 use crate::world::AxolotlWorld;
@@ -53,6 +54,7 @@ use log::{debug, info};
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
 
+use axolotl_items::blocks::MinecraftBlock;
 use axolotl_world::level::MinecraftVersion;
 use registry::SimpleRegistry;
 use thiserror::Error;
@@ -118,6 +120,13 @@ impl AxolotlGame {
                 .join("worldgen")
                 .join("density_function"),
         )?);
+        let mut block_registry = SimpleRegistry::new();
+        axolotl_items::load_blocks(
+            config.prismarine_data,
+            config.data_dump.clone(),
+            &mut block_registry,
+        )
+        .unwrap();
         let mut registries = AxolotlRegistries {
             biomes: SimpleRegistry::load_from_path(
                 config
@@ -127,6 +136,7 @@ impl AxolotlGame {
                     .join("worldgen")
                     .join("biome"),
             )?,
+            blocks: block_registry,
         };
 
         // TODO: Load Data Packs
@@ -178,13 +188,7 @@ impl Game for AxolotlGame {
 }
 pub struct AxolotlRegistries {
     pub biomes: SimpleRegistry<DataPackBiome>,
-}
-impl AxolotlRegistries {
-    pub fn new() -> Self {
-        Self {
-            biomes: SimpleRegistry::new(),
-        }
-    }
+    pub blocks: SimpleRegistry<MinecraftBlock>,
 }
 impl Registries<AxolotlGame> for AxolotlRegistries {
     type BiomeRegistry = SimpleRegistry<DataPackBiome>;

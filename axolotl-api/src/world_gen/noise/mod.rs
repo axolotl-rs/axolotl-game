@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -113,7 +114,7 @@ pub trait ChunkGenerator<'game> {
     type ChunkSettings: for<'a> Deserialize<'a>;
     type Chunk;
     type GameTy: Game;
-    fn new(game: &'game Self::GameTy, chunk_settings: Self::ChunkSettings) -> Self;
+    fn new(game: Arc<Self::GameTy>, chunk_settings: Self::ChunkSettings) -> Self;
 
     fn generate_chunk(&self, chunk_x: i32, chunk_z: i32) -> Self::Chunk;
     fn generate_chunk_into(&self, chunk: &mut Self::Chunk);

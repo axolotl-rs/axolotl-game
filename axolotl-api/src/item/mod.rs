@@ -11,6 +11,8 @@ pub trait ToolType {
 }
 
 pub trait Item: Debug + Send + Sync {
+    fn id(&self) -> usize;
+
     fn get_namespace(&self) -> NameSpaceRef<'_>;
 }
 
@@ -22,14 +24,14 @@ pub trait Tool: Item + HasHarvestLevel {
     type ToolType: ToolType;
 }
 
-pub trait ItemRegistry {
-    fn get_item(&self, name: impl NamespacedKey) -> Option<&Box<dyn Item>>;
-}
-
 impl<'s, B> Item for &'s B
 where
     B: Item,
 {
+    fn id(&self) -> usize {
+        (*self).id()
+    }
+
     fn get_namespace(&self) -> NameSpaceRef<'s> {
         (*self).get_namespace()
     }

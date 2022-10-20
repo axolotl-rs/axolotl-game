@@ -3,6 +3,7 @@ use log::warn;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
+use std::sync::Arc;
 
 use axolotl_api::game::{Game, Registry};
 use axolotl_api::world_gen::chunk::ChunkPos;
@@ -36,7 +37,7 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
     type Chunk = AxolotlChunk<'game>;
     type GameTy = AxolotlGame;
 
-    fn new(_game: &Self::GameTy, _chunk_settings: Self::ChunkSettings) -> Self {
+    fn new(game: Arc<Self::GameTy>, chunk_settings: Self::ChunkSettings) -> Self {
         todo!()
     }
 
@@ -130,7 +131,7 @@ impl DensityLoader for AxolotlDensityLoader {
                 warn!("Top level function {} is not a function or spline", key);
             }
         }
-        self.0.register(key, value);
+        self.0.register(key.to_string(), value);
     }
 
     fn build_from_def<G: Game, P: Perlin<Noise = Noise, Seed = [u8; 16]>>(

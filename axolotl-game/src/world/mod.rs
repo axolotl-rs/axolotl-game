@@ -22,7 +22,6 @@ use chunk::placed_block::PlacedBlock;
 use dumbledore::world::World as ECSWorld;
 use entity::player::PlayerUpdate;
 
-pub mod block;
 pub mod chunk;
 pub mod entity;
 pub mod generator;
