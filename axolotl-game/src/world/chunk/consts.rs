@@ -21,3 +21,5 @@ pub const BITS_PER_BLOCK: usize = 5;
 
 pub const MIN_Y_SECTION: i8 = -4;
 pub const MAX_Y_SECTION: i8 = 19;
+
+pub const DATA_VERSION: i32 = 3120;

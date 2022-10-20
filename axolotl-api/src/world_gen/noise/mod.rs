@@ -69,7 +69,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for NameSpaceKeyOrType<T> {
 pub struct NameSpaceKeyAndProperties {
     #[serde(rename = "Name")]
     pub name: OwnedNameSpaceKey,
-    #[serde(rename = "Properties")]
+    #[serde(rename = "Properties", default)]
     pub properties: HashMap<String, String>,
 }
 
@@ -116,6 +116,7 @@ pub trait ChunkGenerator<'game> {
     fn new(game: &'game Self::GameTy, chunk_settings: Self::ChunkSettings) -> Self;
 
     fn generate_chunk(&self, chunk_x: i32, chunk_z: i32) -> Self::Chunk;
+    fn generate_chunk_into(&self, chunk: &mut Self::Chunk);
 }
 
 /// Biome Source
@@ -130,18 +131,18 @@ pub trait BiomeSource {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Noise {
     pub amplitudes: Vec<f64>,
-    pub first_octave: i32,
+    pub first_octave: Option<i32>,
 }
 impl From<(Vec<f64>, i32)> for Noise {
     fn from((am, octave): (Vec<f64>, i32)) -> Self {
         Self {
             amplitudes: am,
-            first_octave: octave,
+            first_octave: Some(octave),
         }
     }
 }
 impl Into<(Vec<f64>, i32)> for Noise {
     fn into(self) -> (Vec<f64>, i32) {
-        (self.amplitudes, self.first_octave)
+        (self.amplitudes, self.first_octave.unwrap_or_default())
     }
 }

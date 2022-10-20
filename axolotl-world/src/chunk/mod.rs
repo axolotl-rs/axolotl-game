@@ -158,8 +158,7 @@ pub struct ChunkSection {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockStates {
-    #[serde(default)]
-    pub data: Vec<u64>,
+    pub data: Option<Vec<u64>>,
     #[serde(default)]
     pub palette: Vec<PaletteItem>,
 }
@@ -167,6 +166,6 @@ pub struct BlockStates {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Biomes {
     #[serde(default)]
-    pub data: Vec<i64>,
+    pub data: Vec<u64>,
     pub palette: Vec<PaletteItem>,
 }

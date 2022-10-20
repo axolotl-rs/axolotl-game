@@ -6,7 +6,11 @@ pub struct CompactArray {
     pub values_per_u64: usize,
     pub mask: u64,
 }
-
+impl Into<Vec<u64>> for CompactArray {
+    fn into(self) -> Vec<u64> {
+        self.data
+    }
+}
 impl CompactArray {
     pub fn new(bits_per_block: usize, length: usize) -> Self {
         let values_per_u64 = Self::calc_values_per_u64(bits_per_block);

@@ -1,6 +1,8 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
+use std::str::FromStr;
 
-use serde::{Deserialize, Serialize};
+use serde::de::{Error, SeqAccess, Visitor};
+use serde::{Deserialize, Serialize, Serializer};
 
 use crate::world_gen::Precipitation;
 use crate::OwnedNameSpaceKey;
@@ -30,7 +32,65 @@ pub trait Biome: Debug {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Carvers {
-    pub air: Vec<OwnedNameSpaceKey>,
+    pub air: Option<Air>,
+}
+#[derive(Debug)]
+pub struct Air(Vec<OwnedNameSpaceKey>);
+pub struct AirVisitor;
+impl<'de> Visitor<'de> for AirVisitor {
+    type Value = Air;
+
+    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+        formatter.write_str("Tag Air with a list of carvers or one")
+    }
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(Air(vec![
+            OwnedNameSpaceKey::from_str(v).map_err(|e| Error::custom(e.to_string()))?
+        ]))
+    }
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(Air(vec![
+            OwnedNameSpaceKey::from_str(&v).map_err(|e| Error::custom(e.to_string()))?
+        ]))
+    }
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut air = Vec::with_capacity(seq.size_hint().unwrap_or(0));
+        while let Some(key) = seq.next_element::<String>()? {
+            air.push(OwnedNameSpaceKey::from_str(&key).map_err(|e| Error::custom(e.to_string()))?);
+        }
+        Ok(Air(air))
+    }
+}
+impl Serialize for Air {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        if self.0.len() == 1 {
+            serializer.serialize_str(&self.0[0].to_string())
+        } else if self.0.len() > 1 {
+            serializer.collect_seq(self.0.iter().map(|k| k.to_string()))
+        } else {
+            serializer.serialize_none()
+        }
+    }
+}
+impl<'de> Deserialize<'de> for Air {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_any(AirVisitor)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -78,13 +138,13 @@ pub struct SpawnerValue {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Spawners {
-    monsters: Vec<SpawnerValue>,
-    creatures: Vec<SpawnerValue>,
-    water_creatures: Vec<SpawnerValue>,
+    monster: Vec<SpawnerValue>,
+    creature: Vec<SpawnerValue>,
+    water_creature: Vec<SpawnerValue>,
     ambient: Vec<SpawnerValue>,
-    underground_water_creatures: Vec<SpawnerValue>,
+    underground_water_creature: Vec<SpawnerValue>,
     water_ambient: Vec<SpawnerValue>,
     misc: Vec<SpawnerValue>,
     /// AXOLOTL!
-    axolotls: Vec<OwnedNameSpaceKey>,
+    axolotls: Vec<SpawnerValue>,
 }

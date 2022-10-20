@@ -4,11 +4,13 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 
-use axolotl_api::game::Game;
+use axolotl_api::game::{Game, Registry};
+use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
 use serde::de::{MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 
+use crate::registry::SimpleRegistry;
 use crate::{get_type, AxolotlGame};
 use axolotl_api::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
 use axolotl_api::world_gen::noise::density::perlin::Perlin;
@@ -31,15 +33,29 @@ pub enum AxolotlGenerator<'game> {
 impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
     type PerlinNoise = GameNoise;
     type ChunkSettings = ChunkSettings;
-    type Chunk = AxolotlChunk;
+    type Chunk = AxolotlChunk<'game>;
     type GameTy = AxolotlGame;
 
     fn new(_game: &Self::GameTy, _chunk_settings: Self::ChunkSettings) -> Self {
         todo!()
     }
 
-    fn generate_chunk(&self, _chunk_x: i32, _chunk_z: i32) -> Self::Chunk {
-        todo!()
+    fn generate_chunk(&self, chunk_x: i32, chunk_z: i32) -> Self::Chunk {
+        match self {
+            AxolotlGenerator::Flat() => todo!(),
+            AxolotlGenerator::Noise(noise) => noise.generate_chunk(chunk_x, chunk_z),
+            AxolotlGenerator::Debug() => todo!(),
+        }
+    }
+
+    fn generate_chunk_into(&self, chunk: &mut Self::Chunk) {
+        match self {
+            AxolotlGenerator::Flat() => {}
+            AxolotlGenerator::Noise(noise) => {
+                noise.generate_chunk_into(chunk);
+            }
+            AxolotlGenerator::Debug() => {}
+        }
     }
 }
 
@@ -104,9 +120,7 @@ impl<'de> Deserialize<'de> for ChunkSettings {
     }
 }
 #[derive(Debug)]
-pub struct AxolotlDensityLoader {
-    pub unloaded: HashMap<OwnedNameSpaceKey, FunctionArgument>,
-}
+pub struct AxolotlDensityLoader(pub(crate) SimpleRegistry<FunctionArgument>);
 impl DensityLoader for AxolotlDensityLoader {
     fn register_top_level(&mut self, key: OwnedNameSpaceKey, value: FunctionArgument) {
         match &value {
@@ -116,7 +130,7 @@ impl DensityLoader for AxolotlDensityLoader {
                 warn!("Top level function {} is not a function or spline", key);
             }
         }
-        self.unloaded.insert(key, value);
+        self.0.register(key, value);
     }
 
     fn build_from_def<G: Game, P: Perlin<Noise = Noise, Seed = [u8; 16]>>(

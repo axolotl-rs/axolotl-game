@@ -1,0 +1,19 @@
+{
+  "game_version": "1.19",
+  "axolotl_version": "0.1.0-THEORY",
+  "protocol_version": 760,
+  "supported_versions": {
+    "1.19.2": {
+      "protocol_version": 760,
+      "world_version": 3120
+    },
+    "1.19.1": {
+      "protocol_version": 760,
+      "world_version": 3120
+    },
+    "1.19.0": {
+      "protocol_version": 759,
+      "world_version": 3120
+    }
+  }
+}

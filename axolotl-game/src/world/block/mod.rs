@@ -5,7 +5,7 @@ use crate::AxolotlWorld;
 use axolotl_api::item::block::{Block, BlockState, BlockStateValue};
 use axolotl_api::item::Item;
 use axolotl_api::world::BlockPosition;
-use axolotl_api::{NameSpaceRef, NamespacedKey};
+use axolotl_api::{NameSpaceRef, NamespacedKey, OwnedNameSpaceKey};
 
 use ahash::AHashMap;
 
@@ -43,16 +43,10 @@ pub trait AxolotlBlock: Block {
 #[derive(Debug, PartialEq)]
 pub enum MinecraftBlock {
     Air,
-    GenericBlock(NameSpaceRef<'static>, GenericBlock),
+    GenericBlock(OwnedNameSpaceKey, GenericBlock),
     //DynBlock(Box<dyn AxolotlBlock<State = MapState, PlacedBlock = PlacedBlock>>),
 }
 impl MinecraftBlock {
-    pub fn from_id(_id: impl Into<u64>) -> Option<&'static MinecraftBlock> {
-        todo!("Define via magic(a macro)")
-    }
-    pub fn from_namespace(_id: &impl NamespacedKey) -> Option<&'static MinecraftBlock> {
-        todo!("Define via magic(a macro)")
-    }
     pub fn id(&self) -> usize {
         match self {
             MinecraftBlock::Air => 0,
@@ -62,18 +56,20 @@ impl MinecraftBlock {
 }
 
 impl Item for MinecraftBlock {
-    fn get_namespace(&self) -> NameSpaceRef<'static> {
+    fn get_namespace(&self) -> NameSpaceRef<'_> {
         match self {
             MinecraftBlock::Air => NameSpaceRef::new("minecraft", "air"),
-            MinecraftBlock::GenericBlock(key, _) => key.clone(),
-            //MinecraftBlock::DynBlock(v) => v.get_namespace(),
+            MinecraftBlock::GenericBlock(key, _) => {
+                NameSpaceRef::new(key.get_namespace(), key.get_key())
+            } //MinecraftBlock::DynBlock(block) => block.get_namespace(),
         }
     }
 }
-impl Block for &'static MinecraftBlock {
+
+impl<'game> Block for &'game MinecraftBlock {
     type State = MapState;
 
-    type PlacedBlock = PlacedBlock;
+    type PlacedBlock = PlacedBlock<'game>;
 
     fn get_default_placed_block(&self) -> Self::PlacedBlock {
         match self {
@@ -106,8 +102,6 @@ impl AxolotlBlock for &'static MinecraftBlock {
         }
     }
 }
-
-impl<Ab: AxolotlBlock> AxolotlBlock for Box<Ab> {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockProperties {}

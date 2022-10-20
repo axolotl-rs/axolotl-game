@@ -46,16 +46,3 @@ where
         (*self).get_default_state()
     }
 }
-impl<B: Block> Block for Box<B> {
-    type State = B::State;
-
-    type PlacedBlock = B::PlacedBlock;
-
-    fn get_default_placed_block(&self) -> Self::PlacedBlock {
-        (**self).get_default_placed_block()
-    }
-
-    fn get_default_state(&self) -> Self::State {
-        (**self).get_default_state()
-    }
-}

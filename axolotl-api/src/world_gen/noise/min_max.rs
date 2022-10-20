@@ -43,12 +43,15 @@ impl<'de> Visitor<'de> for MinMaxVisitor {
             match i {
                 0 => min_max.min = value,
                 1 => min_max.max = value,
-                _ => return Err(serde::de::Error::custom("expected an array of two values")),
+                _ => {}
             }
             i += 1;
         }
         if i != 2 {
-            return Err(serde::de::Error::custom("expected an array of two values"));
+            return Err(serde::de::Error::custom(format!(
+                "expected an array of two values got an array of {} values",
+                i
+            )));
         }
         Ok(min_max)
     }
@@ -59,7 +62,7 @@ impl<'de> Deserialize<'de> for MinMax {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_str(MinMaxVisitor)
+        deserializer.deserialize_seq(MinMaxVisitor)
     }
 }
 impl Serialize for MinMax {

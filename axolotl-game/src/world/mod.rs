@@ -36,7 +36,7 @@ use crate::world::level::accessor::v_19::Minecraft19WorldAccessor;
 use crate::Sender;
 
 #[derive(Debug)]
-pub enum ChunkUpdate {
+pub enum ChunkUpdate<'game> {
     Unload {
         x: i32,
         z: i32,
@@ -44,10 +44,10 @@ pub enum ChunkUpdate {
     Load {
         x: i32,
         z: i32,
-        set_block: Option<(BlockPosition, PlacedBlock)>,
+        set_block: Option<(BlockPosition, PlacedBlock<'game>)>,
     },
 }
-impl ChunkUpdate {
+impl ChunkUpdate<'_> {
     pub fn get_region(&self) -> (i32, i32) {
         match self {
             ChunkUpdate::Unload { x, z } => (*x >> 5, *z >> 5),
@@ -85,14 +85,13 @@ impl ChunkTickets {
 pub struct AxolotlWorld<'game> {
     pub uuid: Uuid,
     pub name: String,
-    pub generator: AxolotlGenerator<'game>,
     pub world_config: WorldConfig,
     pub clients: AHashMap<Entity, WorldPlayer>,
     pub render_distance: u8,
     pub simulation_distance: u8,
     pub entities: Vec<MinecraftEntity>,
     pub game_world: ECSWorld,
-    pub chunk_map: Arc<ChunkMap<Minecraft19WorldAccessor>>,
+    pub chunk_map: Arc<ChunkMap<'game, Minecraft19WorldAccessor<'game>>>,
     pub chunk_tickets: ChunkTickets,
     pub new_players: Queue<(Entity, WorldPlayer)>,
     pub player_access: Arc<Minecraft19PlayerAccess>,
@@ -175,9 +174,9 @@ impl Hash for AxolotlWorld<'_> {
 }
 
 impl<'game> World for AxolotlWorld<'game> {
-    type Chunk = AxolotlChunk;
+    type Chunk = AxolotlChunk<'game>;
     type NoiseGenerator = AxolotlGenerator<'game>;
-    type WorldBlock = PlacedBlock;
+    type WorldBlock = PlacedBlock<'game>;
 
     fn get_name(&self) -> &str {
         &self.name
@@ -190,10 +189,10 @@ impl<'game> World for AxolotlWorld<'game> {
     fn tick(&mut self) {}
 
     fn generator(&self) -> &Self::NoiseGenerator {
-        &self.generator
+        &self.chunk_map.generator
     }
 
-    fn set_block(&self, location: BlockPosition, block: PlacedBlock) {
+    fn set_block(&self, location: BlockPosition, block: PlacedBlock<'game>) {
         let mut relative_pos = location.clone();
         let position = (relative_pos).chunk();
         let id = block.id();

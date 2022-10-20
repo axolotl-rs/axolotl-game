@@ -1,3 +1,4 @@
+mod registry;
 pub mod world;
 
 pub use flume::{Receiver, Sender};
@@ -32,38 +33,127 @@ pub enum Error {
     NbtError(#[from] axolotl_nbt::NBTError),
     #[error(transparent)]
     SerdeError(#[from] serde_impl::Error),
+    #[error(transparent)]
+    JsonError(#[from] serde_json::Error),
 }
 
 use crate::world::block::MinecraftBlock;
 use crate::world::generator::AxolotlDensityLoader;
 use crate::world::perlin::GameNoise;
 use crate::world::AxolotlWorld;
-use axolotl_api::game::{DataRegistries, Game, Registries, Registry};
+use axolotl_api::game::{AxolotlVersion, DataRegistries, Game, Registries, Registry};
 use axolotl_api::item::block::BlockState;
 use axolotl_api::world_gen::biome::vanilla::DataPackBiome;
 
 use axolotl_api::world_gen::noise::{Noise, NoiseSetting};
-use axolotl_api::OwnedNameSpaceKey;
+use axolotl_api::NamespacedKey;
 use axolotl_nbt::serde_impl;
 pub(crate) use get_type;
-use std::collections::HashMap;
+use log::{debug, info};
 use std::fmt::{Debug, Formatter};
+use std::path::PathBuf;
 
+use axolotl_world::level::MinecraftVersion;
+use registry::SimpleRegistry;
 use thiserror::Error;
 
+const AXOLOTL_VERSION: &str = include_str!("axolotl-version.json");
+const MINECRAFT_VERSION: &str = include_str!("minecraft_version.json");
+
+#[derive(Debug)]
+pub struct GameConfig {
+    // Path to the Minecraft Data Dump
+    pub data_dump: PathBuf,
+    // Any data packs to load
+    pub data_packs: Vec<PathBuf>,
+    // The data from https://github.com/PrismarineJS/minecraft-data/
+    pub prismarine_data: PathBuf,
+}
 pub struct AxolotlGame {
-    pub registries: AxolotlDataRegistries,
+    pub data_registries: AxolotlDataRegistries,
+    pub registries: AxolotlRegistries,
     pub density_loader: AxolotlDensityLoader,
+    pub minecraft_version: MinecraftVersion,
+    pub axolotl_version: AxolotlVersion,
+}
+impl AxolotlGame {
+    pub fn load(config: GameConfig) -> Result<Self, Error> {
+        let minecraft_version: MinecraftVersion =
+            serde_json::from_str(MINECRAFT_VERSION).expect("Failed to parse minecraft version");
+        let axolotl_version: AxolotlVersion =
+            serde_json::from_str(AXOLOTL_VERSION).expect("Failed to parse axolotl version");
+        info!("Loading Minecraft {:?}", minecraft_version);
+        info!("Loading Axolotl {:?}", axolotl_version);
+
+        debug!("Attempting to load the data dump at {:?}", config.data_dump);
+        if !config.data_dump.exists() {
+            return Err(Error::IO(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Data dump not found",
+            )));
+        }
+        let mut data_registries = AxolotlDataRegistries {
+            noises: SimpleRegistry::load_from_path(
+                config
+                    .data_dump
+                    .join("reports")
+                    .join("minecraft")
+                    .join("worldgen")
+                    .join("noise"),
+            )?,
+            noise_settings: SimpleRegistry::load_from_path(
+                config
+                    .data_dump
+                    .join("reports")
+                    .join("minecraft")
+                    .join("worldgen")
+                    .join("noise_settings"),
+            )?,
+        };
+        let mut density_loader = AxolotlDensityLoader(SimpleRegistry::load_from_path(
+            config
+                .data_dump
+                .join("reports")
+                .join("minecraft")
+                .join("worldgen")
+                .join("density_function"),
+        )?);
+        let mut registries = AxolotlRegistries {
+            biomes: SimpleRegistry::load_from_path(
+                config
+                    .data_dump
+                    .join("reports")
+                    .join("minecraft")
+                    .join("worldgen")
+                    .join("biome"),
+            )?,
+        };
+
+        // TODO: Load Data Packs
+        Ok(Self {
+            data_registries,
+            registries,
+            density_loader,
+            minecraft_version,
+            axolotl_version,
+        })
+    }
+    pub fn get_block(&self, key: impl NamespacedKey) -> Option<&MinecraftBlock> {
+        todo!("get_block")
+    }
 }
 impl Debug for AxolotlGame {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "AxolotlGame")
+        write!(
+            f,
+            "AxolotlGame {:?} Minecraft Version {:?}",
+            self.axolotl_version, self.minecraft_version
+        )
     }
 }
 impl Game for AxolotlGame {
     type World = AxolotlWorld<'static>;
     type Biome = DataPackBiome;
-    type Block = &'static MinecraftBlock;
 
     type DensityLoader = AxolotlDensityLoader;
     type Perlin = GameNoise;
@@ -71,45 +161,40 @@ impl Game for AxolotlGame {
     type DataRegistries = AxolotlDataRegistries;
 
     fn registries(&self) -> &Self::Registries {
-        todo!()
-    }
-
-    fn mut_registries(&mut self) -> &mut Self::Registries {
-        todo!()
-    }
-
-    fn data_registries(&self) -> &Self::DataRegistries {
         &self.registries
     }
 
-    fn mut_data_registries(&mut self) -> &mut Self::DataRegistries {
+    fn mut_registries(&mut self) -> &mut Self::Registries {
         &mut self.registries
     }
+
+    fn data_registries(&self) -> &Self::DataRegistries {
+        &self.data_registries
+    }
+
+    fn mut_data_registries(&mut self) -> &mut Self::DataRegistries {
+        &mut self.data_registries
+    }
 }
-pub struct AxolotlRegistries {}
+pub struct AxolotlRegistries {
+    pub biomes: SimpleRegistry<DataPackBiome>,
+}
 impl AxolotlRegistries {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            biomes: SimpleRegistry::new(),
+        }
     }
 }
 impl Registries<AxolotlGame> for AxolotlRegistries {
-    type BlockRegistry = SimpleRegistry<&'static MinecraftBlock>;
     type BiomeRegistry = SimpleRegistry<DataPackBiome>;
 
-    fn get_block_registry(&self) -> &Self::BlockRegistry {
-        todo!()
-    }
-
     fn get_biome_registry(&self) -> &Self::BiomeRegistry {
-        todo!()
-    }
-
-    fn get_mut_block_registry(&mut self) -> &mut Self::BlockRegistry {
-        todo!()
+        &self.biomes
     }
 
     fn get_mut_biome_registry(&mut self) -> &mut Self::BiomeRegistry {
-        todo!()
+        &mut self.biomes
     }
 }
 
@@ -135,30 +220,5 @@ impl DataRegistries for AxolotlDataRegistries {
 
     fn get_mut_noise_setting_registry(&mut self) -> &mut Self::NoiseSettingRegistry {
         &mut self.noise_settings
-    }
-}
-
-pub struct SimpleRegistry<T> {
-    pub map: HashMap<OwnedNameSpaceKey, T>,
-}
-impl<T> SimpleRegistry<T> {
-    pub fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-        }
-    }
-}
-impl<T> Default for SimpleRegistry<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-impl<T> Registry<T> for SimpleRegistry<T> {
-    fn register(&mut self, namespace: OwnedNameSpaceKey, item: T) {
-        self.map.insert(namespace, item);
-    }
-
-    fn get(&self, key: &OwnedNameSpaceKey) -> Option<&T> {
-        self.map.get(key)
     }
 }

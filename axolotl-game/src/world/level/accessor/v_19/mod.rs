@@ -1,7 +1,8 @@
 pub mod player;
 
+use crate::world::generator::AxolotlGenerator;
 use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter, RawChunk};
-use crate::Error;
+use crate::{AxolotlGame, Error};
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_world::entity::RawEntities;
 use axolotl_world::region::file::{RegionFile, RegionFileType};
@@ -13,8 +14,10 @@ use parking_lot::lock_api::RawMutex;
 use parking_lot::Mutex;
 use std::fs::OpenOptions;
 use std::sync::atomic::AtomicU8;
+use std::sync::Arc;
 use tux_lockfree::map::Removed;
 use tux_lockfree::prelude::{Map, Queue};
+
 pub const MAX_NUMBER_OPEN_REGIONS: u8 = 16;
 #[derive(Debug)]
 pub struct ActiveRegion {
@@ -22,14 +25,15 @@ pub struct ActiveRegion {
     pub entities: RegionFile,
 }
 #[derive(Debug)]
-pub struct Minecraft19WorldAccessor {
+pub struct Minecraft19WorldAccessor<'game> {
     pub open_regions: AtomicU8,
     pub active_regions: Map<(i32, i32), Mutex<ActiveRegion>>,
     pub world: RawWorld,
     pub dead_chunks: Queue<RawChunk>,
     pub dead_regions: Queue<(RegionHeader, Vec<u8>)>,
+    pub game: &'game AxolotlGame,
 }
-impl Minecraft19WorldAccessor {
+impl<'game> Minecraft19WorldAccessor<'game> {
     pub fn clean(&self) {
         for x in self.dead_regions.pop_iter() {
             debug!("Removing dead region {:?}", x);
@@ -149,13 +153,13 @@ impl Minecraft19WorldAccessor {
         }
     }
 }
-impl LevelReader for Minecraft19WorldAccessor {
+impl<'game> LevelReader<'game> for Minecraft19WorldAccessor<'game> {
     type Error = crate::Error;
 
     fn get_chunk_into(
         &self,
         chunk_pos: &ChunkPos,
-        chunk: &mut impl IntoRawChunk,
+        chunk: &mut impl IntoRawChunk<'game>,
     ) -> Result<bool, Self::Error> {
         self.region(chunk_pos, |region| {
             let index = RegionHeader::get_index(chunk_pos) as usize;
@@ -167,7 +171,7 @@ impl LevelReader for Minecraft19WorldAccessor {
                         .read_chunk_in_place(&region_loc, &mut v)?
                         .is_some()
                     {
-                        chunk.load_from_chunk(&mut v, None);
+                        chunk.load_from_chunk(self.game, &mut v, None);
 
                         self.dead_chunks.push(v);
                         Ok(true)
@@ -177,7 +181,7 @@ impl LevelReader for Minecraft19WorldAccessor {
                     }
                 } else {
                     if let Some((_, mut raw_chunk)) = region.chunks.read_chunk(&region_loc)? {
-                        chunk.load_from_chunk(&mut raw_chunk, None);
+                        chunk.load_from_chunk(self.game, &mut raw_chunk, None);
                         self.dead_chunks.push(raw_chunk);
                         Ok(true)
                     } else {
@@ -220,10 +224,14 @@ impl LevelReader for Minecraft19WorldAccessor {
         })
     }
 }
-impl LevelWriter for Minecraft19WorldAccessor {
+impl<'game> LevelWriter<'game> for Minecraft19WorldAccessor<'game> {
     type Error = crate::Error;
 
-    fn save_chunk(&self, chunk_pos: ChunkPos, chunk: impl IntoRawChunk) -> Result<(), Self::Error> {
+    fn save_chunk(
+        &self,
+        chunk_pos: ChunkPos,
+        chunk: impl IntoRawChunk<'game>,
+    ) -> Result<(), Self::Error> {
         self.region(&chunk_pos, |region| {
             let index = RegionHeader::get_index(&chunk_pos) as usize;
             if let Some(region_loc) = region.chunks.region_header.locations.get(index) {

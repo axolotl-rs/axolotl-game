@@ -25,3 +25,5 @@ dumbledore = { git = "https://github.com/wyatt-herkamp/Dumbledore.git", features
 tokio = { version = "1", features = ["full"] }
 bytemuck = { version = "1.12", features = ["derive"] }
 axolotl-nbt = { git = "https://github.com/axolotl-rs/axolotl-nbt.git", features = ["value", "serde"] }
+[dev-dependencies]
+simple-log = "1"

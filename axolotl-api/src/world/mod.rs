@@ -80,7 +80,7 @@ pub trait World: Send + Sync + Hash + Debug {
         'game,
         Chunk = Self::Chunk,
     >;
-    type WorldBlock: Block;
+    type WorldBlock;
     fn get_name(&self) -> &str;
 
     fn uuid(&self) -> &Uuid;

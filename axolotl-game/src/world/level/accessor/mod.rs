@@ -1,5 +1,7 @@
 pub mod v_19;
 
+use crate::world::block::AxolotlBlock;
+use crate::AxolotlGame;
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_world::chunk::RawChunk;
 use axolotl_world::entity::RawEntities;
@@ -22,28 +24,37 @@ impl RegionLocation {
     }
 }
 
-pub trait LevelReader {
+pub trait LevelReader<'game> {
     type Error: Debug;
     fn get_chunk_into(
         &self,
         chunk_pos: &ChunkPos,
-        chunk: &mut impl IntoRawChunk,
+        chunk: &mut impl IntoRawChunk<'game>,
     ) -> Result<bool, Self::Error>;
 
     fn get_chunk(&self, chunk_pos: &ChunkPos) -> Result<Option<RawChunk>, Self::Error>;
 }
-pub trait LevelWriter {
+pub trait LevelWriter<'game> {
     type Error: Debug + Into<crate::Error>;
 
-    fn save_chunk(&self, chunk_pos: ChunkPos, chunk: impl IntoRawChunk) -> Result<(), Self::Error>;
+    fn save_chunk(
+        &self,
+        chunk_pos: ChunkPos,
+        chunk: impl IntoRawChunk<'game>,
+    ) -> Result<(), Self::Error>;
     fn save_chunks(
         &self,
         chunks: impl Iterator<Item = (ChunkPos, RawChunk)>,
     ) -> Result<(), Self::Error>;
 }
 
-pub trait IntoRawChunk {
-    fn load_from_chunk(&mut self, chunk: &mut RawChunk, entities: Option<&mut RawEntities>);
+pub trait IntoRawChunk<'game> {
+    fn load_from_chunk(
+        &mut self,
+        game: &'game AxolotlGame,
+        chunk: &mut RawChunk,
+        entities: Option<&mut RawEntities>,
+    );
 
     fn into_raw_chunk(self) -> RawChunk;
 

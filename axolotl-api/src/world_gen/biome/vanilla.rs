@@ -5,6 +5,7 @@ use crate::world_gen::Precipitation;
 use crate::OwnedNameSpaceKey;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum VanillaPrecipitation {
     Rain,
     Snow,

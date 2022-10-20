@@ -4,6 +4,7 @@ use crate::world::chunk::consts::{SECTION_X_SIZE, SECTION_Y_SIZE, SECTION_Z_SIZE
 use axolotl_api::world::BlockPosition;
 use axolotl_api::OwnedNameSpaceKey;
 use axolotl_world::chunk::compact_array::CompactArrayIndex;
+use axolotl_world::chunk::ChunkSection;
 use bytemuck::{Pod, Zeroable};
 use std::fmt::{Debug, Formatter};
 use thiserror::Error;
@@ -60,21 +61,32 @@ pub enum InvalidChunkSection {
     #[error("Tried to set block out of bounds")]
     OutOfBounds,
     #[error("Invalid Block Data Num {0}")]
-    InvalidBlock(i64),
+    InvalidData(i64),
+    #[error("Unable to find {0}")]
+    InvalidNamespaceKey(OwnedNameSpaceKey),
 }
 
 #[derive(Debug, Clone)]
-pub struct AxolotlChunkSection {
-    pub blocks: AxolotlBlockSection,
+pub struct AxolotlChunkSection<'game> {
+    pub blocks: AxolotlBlockSection<'game>,
     pub biomes: AxolotlBiomeSection,
     pub y: i8,
 }
-impl Default for AxolotlChunkSection {
+impl Into<ChunkSection> for AxolotlChunkSection<'_> {
+    fn into(self) -> ChunkSection {
+        ChunkSection {
+            y_pos: self.y,
+            biomes: None, // TODO: Implement biomes
+            block_states: Some(self.blocks.into()),
+        }
+    }
+}
+impl Default for AxolotlChunkSection<'_> {
     fn default() -> Self {
         AxolotlChunkSection::new(0)
     }
 }
-impl AxolotlChunkSection {
+impl AxolotlChunkSection<'_> {
     pub fn new(y: i8) -> Self {
         Self {
             blocks: AxolotlBlockSection::default(),

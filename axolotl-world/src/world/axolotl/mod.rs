@@ -52,11 +52,39 @@ impl World for AxolotlWorld {
         })
     }
 
-    fn create(_world_folder: PathBuf, _level_dat: Self::LevelDat) -> Result<Self, Self::Error>
+    fn create(world_folder: PathBuf, level_dat: Self::LevelDat) -> Result<Self, Self::Error>
     where
         Self: Sized,
     {
-        todo!()
+        if !world_folder.exists() {
+            std::fs::create_dir_all(&world_folder)?;
+        }
+        let level_dat_path = world_folder.join("level.dat");
+        if level_dat_path.exists() {
+            return Err(AxolotlWorldError::IO(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                "level.dat already exists",
+            )));
+        }
+        let mut level_dat_file = std::fs::File::create(level_dat_path)?;
+        serde_impl::to_writer(&mut level_dat_file, &level_dat)?;
+        let player_folder = world_folder
+            .join(level_dat.axolotl_player_data.as_str())
+            .canonicalize()?;
+        if !player_folder.exists() {
+            std::fs::create_dir_all(&player_folder)?;
+        }
+        let entities_folder = player_folder.join("entities");
+        if !entities_folder.exists() {
+            std::fs::create_dir_all(&entities_folder)?;
+        }
+        let regions = player_folder.join("regions");
+
+        if !regions.exists() {
+            std::fs::create_dir_all(&regions)?;
+        }
+
+        Ok(Self::load(world_folder, level_dat)?)
     }
 
     fn get_dimensions(&self) -> &HashMap<OwnedNameSpaceKey, PathBuf> {

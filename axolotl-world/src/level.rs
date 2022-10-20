@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "PascalCase")]
-pub struct Version {
+pub struct MinecraftVersion {
     pub name: String,
     pub id: i32,
     pub snapshot: bool,
@@ -21,7 +21,7 @@ pub struct DataPacks {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct LevelDat {
-    pub version: Version,
+    pub version: MinecraftVersion,
     pub game_rules: Vec<Value>,
     pub data_packs: DataPacks,
     #[serde(rename = "version")]
@@ -34,7 +34,7 @@ pub struct LevelDat {
     pub spawn_y: i32,
     pub spawn_z: i32,
     pub level_name: String,
-    #[serde(rename = "Data")]
+    #[serde(flatten)]
     pub other: HashMap<String, NameLessValue>,
 }
 

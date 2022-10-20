@@ -1,14 +1,29 @@
 use crate::{NamespacedKey, OwnedNameSpaceKey};
 use paste::paste;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::world_gen::noise::density::loading::DensityLoader;
 use crate::world_gen::noise::density::perlin::Perlin;
 use crate::world_gen::noise::{Noise, NoiseSetting};
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct SupportedVersion {
+    pub protocol_version: i64,
+    pub world_version: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct AxolotlVersion {
+    pub game_version: String,
+    pub axolotl_version: String,
+    pub protocol_version: i64,
+    pub supported_versions: HashMap<String, SupportedVersion>,
+}
+
 pub trait Game: Sized {
     type World: crate::world::World;
     type Biome: crate::world_gen::biome::Biome;
-    type Block: crate::item::block::Block;
 
     type DensityLoader: DensityLoader;
     type Perlin: Perlin<Noise = Noise, Seed = [u8; 16]>;
@@ -38,7 +53,7 @@ macro_rules! registries {
         }
     };
 }
-registries!(Block, block, Biome, biome);
+registries!(Biome, biome);
 
 macro_rules! data_registries {
     ($($t:ty, $name:ident),*) => {

@@ -11,7 +11,7 @@ pub trait ToolType {
 }
 
 pub trait Item: Debug + Send + Sync {
-    fn get_namespace(&self) -> NameSpaceRef<'static>;
+    fn get_namespace(&self) -> NameSpaceRef<'_>;
 }
 
 pub trait HasHarvestLevel {
@@ -30,15 +30,7 @@ impl<'s, B> Item for &'s B
 where
     B: Item,
 {
-    fn get_namespace(&self) -> NameSpaceRef<'static> {
+    fn get_namespace(&self) -> NameSpaceRef<'s> {
         (*self).get_namespace()
-    }
-}
-impl<B> Item for Box<B>
-where
-    B: Item,
-{
-    fn get_namespace(&self) -> NameSpaceRef<'static> {
-        (**self).get_namespace()
     }
 }
