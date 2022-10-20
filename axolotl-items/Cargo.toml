@@ -1,0 +1,17 @@
+[package]
+name = "axolotl-items"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axolotl-api = { path = "../axolotl-api" }
+ahash = { version = "0.8" , features=["serde"]}
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+log = "0.4"
+minecraft-data-rs = { git = "https://github.com/axolotl-rs/minecraft-data-rs.git", default-features = false }
+[features]
+custom_blocks = []
