@@ -26,11 +26,11 @@ pub mod placed_block;
 pub mod section;
 
 #[derive(Debug, Clone)]
-pub struct AxolotlChunk<'game> {
+pub struct AxolotlChunk {
     pub chunk_pos: ChunkPos,
-    pub sections: [AxolotlChunkSection<'game>; (consts::Y_SIZE / consts::SECTION_Y_SIZE)],
+    pub sections: [AxolotlChunkSection; (consts::Y_SIZE / consts::SECTION_Y_SIZE)],
 }
-impl<'game> AxolotlChunk<'game> {
+impl AxolotlChunk {
     pub fn new(chunk_pos: ChunkPos) -> Self {
         let mut sections: [AxolotlChunkSection; (consts::Y_SIZE / consts::SECTION_Y_SIZE)] =
             Default::default();
@@ -43,7 +43,7 @@ impl<'game> AxolotlChunk<'game> {
             sections,
         }
     }
-    pub fn set_block(&mut self, mut pos: BlockPosition, block: PlacedBlock<'game>) {
+    pub fn set_block(&mut self, mut pos: BlockPosition, block: PlacedBlock) {
         let id = pos.section();
         if id >= self.sections.len() {
             warn!("Tried to set block out of bounds");
@@ -53,7 +53,7 @@ impl<'game> AxolotlChunk<'game> {
         section.blocks.set_block(pos, block);
     }
 }
-impl<'game> IntoRawChunk<'game> for AxolotlChunk<'game> {
+impl<'game> IntoRawChunk<'game> for AxolotlChunk {
     fn load_from_chunk(
         &mut self,
         game: &'game AxolotlGame,
@@ -103,18 +103,18 @@ impl<'game> IntoRawChunk<'game> for AxolotlChunk<'game> {
     }
 }
 #[derive(Debug)]
-pub struct ChunkHandle<'game> {
-    pub value: RwLock<AxolotlChunk<'game>>,
+pub struct ChunkHandle {
+    pub value: RwLock<AxolotlChunk>,
     pub loaded: AtomicBool,
 }
 #[derive(Debug)]
 pub struct ChunkMap<'game, V: LevelReader<'game> + LevelWriter<'game> + Debug> {
     pub generator: AxolotlGenerator<'game>,
 
-    pub thread_safe_chunks: Map<ChunkPos, ChunkHandle<'game>>,
-    pub dead_chunks: Queue<AxolotlChunk<'game>>,
+    pub thread_safe_chunks: Map<ChunkPos, ChunkHandle>,
+    pub dead_chunks: Queue<AxolotlChunk>,
     // Load Queue
-    pub queue: Queue<ChunkUpdate<'game>>,
+    pub queue: Queue<ChunkUpdate>,
     pub accessor: V,
 }
 impl<'game, V: LevelReader<'game> + LevelWriter<'game> + Debug> ChunkMap<'game, V>
@@ -130,7 +130,7 @@ where
         }
     }
     /// Handles a single update
-    pub fn handle_update(&self, update: ChunkUpdate<'game>) -> Result<(), Error> {
+    pub fn handle_update(&self, update: ChunkUpdate) -> Result<(), Error> {
         match update {
             ChunkUpdate::Load { x, z, set_block } => {
                 self.load_chunk(x, z, set_block)?;
@@ -170,7 +170,7 @@ where
         &self,
         x: i32,
         z: i32,
-        update: Option<(BlockPosition, PlacedBlock<'game>)>,
+        update: Option<(BlockPosition, PlacedBlock)>,
     ) -> Result<(), Error> {
         let pos = ChunkPos::new(x, z);
         let mut chunk = if let Some(dead) = self.dead_chunks.pop() {

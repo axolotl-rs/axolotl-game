@@ -42,8 +42,8 @@ pub enum Error {
 use crate::world::generator::AxolotlDensityLoader;
 use crate::world::perlin::GameNoise;
 use crate::world::AxolotlWorld;
-use axolotl_api::game::{AxolotlVersion, DataRegistries, Game, Registries, Registry};
-use axolotl_api::item::block::BlockState;
+use axolotl_api::game::{AxolotlVersion, DataRegistries, Game, Registries};
+
 use axolotl_api::world_gen::biome::vanilla::DataPackBiome;
 
 use axolotl_api::world_gen::noise::{Noise, NoiseSetting};
@@ -69,7 +69,7 @@ pub struct GameConfig {
     // Any data packs to load
     pub data_packs: Vec<PathBuf>,
     // The data from https://github.com/PrismarineJS/minecraft-data/
-    pub prismarine_data: PathBuf,
+    pub axolotl_data: PathBuf,
 }
 pub struct AxolotlGame {
     pub data_registries: AxolotlDataRegistries,
@@ -94,7 +94,7 @@ impl AxolotlGame {
                 "Data dump not found",
             )));
         }
-        let mut data_registries = AxolotlDataRegistries {
+        let data_registries = AxolotlDataRegistries {
             noises: SimpleRegistry::load_from_path(
                 config
                     .data_dump
@@ -112,7 +112,7 @@ impl AxolotlGame {
                     .join("noise_settings"),
             )?,
         };
-        let mut density_loader = AxolotlDensityLoader(SimpleRegistry::load_from_path(
+        let density_loader = AxolotlDensityLoader(SimpleRegistry::load_from_path(
             config
                 .data_dump
                 .join("reports")
@@ -120,14 +120,16 @@ impl AxolotlGame {
                 .join("worldgen")
                 .join("density_function"),
         )?);
+        let materials = axolotl_items::load_materials(config.axolotl_data.clone()).unwrap();
         let mut block_registry = SimpleRegistry::new();
         axolotl_items::load_blocks(
-            config.prismarine_data,
+            config.axolotl_data,
             config.data_dump.clone(),
+            &materials,
             &mut block_registry,
         )
         .unwrap();
-        let mut registries = AxolotlRegistries {
+        let registries = AxolotlRegistries {
             biomes: SimpleRegistry::load_from_path(
                 config
                     .data_dump
@@ -148,7 +150,7 @@ impl AxolotlGame {
             axolotl_version,
         })
     }
-    pub fn get_block(&self, key: impl NamespacedKey) -> Option<&MinecraftBlock> {
+    pub fn get_block(&self, _ey: impl NamespacedKey) -> Option<&MinecraftBlock> {
         todo!("get_block")
     }
 }

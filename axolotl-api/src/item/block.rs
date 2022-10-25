@@ -1,13 +1,14 @@
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer};
 use serde_json::ser::State;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use crate::item::Item;
+use crate::item::{Item, ItemType};
 use crate::world::{BlockPosition, GenericLocation, World, WorldLocation};
 use crate::world_gen::noise::ChunkGenerator;
-use crate::NameSpaceRef;
+use crate::{NameSpaceRef, NumericId};
 
 /// A Generic Block State Type
 #[derive(Debug, Clone, PartialEq)]
@@ -112,25 +113,33 @@ impl<'de> Deserialize<'de> for BlockStateValue {
     }
 }
 
-pub trait BlockState: Debug {
+pub trait BlockState: Debug + Clone {
     fn get(&self, name: &str) -> Option<&BlockStateValue>;
 
     fn set(&mut self, name: impl Into<String>, value: BlockStateValue);
 }
 
-pub trait Block: Item {
+pub trait Block: ItemType + NumericId {
     type State: BlockState;
 
-    fn get_default_state(&self) -> Self::State;
+    fn create_default_state(&self) -> Self::State;
+
+    fn get_default_state(&self) -> Cow<'_, Self::State> {
+        Cow::Owned(self.create_default_state())
+    }
 }
 
 impl<B> Block for &'_ B
 where
-    B: Block,
+    B: Block + ItemType,
 {
     type State = B::State;
 
-    fn get_default_state(&self) -> Self::State {
+    fn create_default_state(&self) -> Self::State {
+        (*self).create_default_state()
+    }
+
+    fn get_default_state(&self) -> Cow<'_, Self::State> {
         (*self).get_default_state()
     }
 }

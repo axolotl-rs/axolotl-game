@@ -35,7 +35,7 @@ use crate::world::level::accessor::v_19::Minecraft19WorldAccessor;
 use crate::Sender;
 
 #[derive(Debug)]
-pub enum ChunkUpdate<'game> {
+pub enum ChunkUpdate {
     Unload {
         x: i32,
         z: i32,
@@ -43,10 +43,10 @@ pub enum ChunkUpdate<'game> {
     Load {
         x: i32,
         z: i32,
-        set_block: Option<(BlockPosition, PlacedBlock<'game>)>,
+        set_block: Option<(BlockPosition, PlacedBlock)>,
     },
 }
-impl ChunkUpdate<'_> {
+impl ChunkUpdate {
     pub fn get_region(&self) -> (i32, i32) {
         match self {
             ChunkUpdate::Unload { x, z } => (*x >> 5, *z >> 5),
@@ -173,9 +173,9 @@ impl Hash for AxolotlWorld<'_> {
 }
 
 impl<'game> World for AxolotlWorld<'game> {
-    type Chunk = AxolotlChunk<'game>;
+    type Chunk = AxolotlChunk;
     type NoiseGenerator = AxolotlGenerator<'game>;
-    type WorldBlock = PlacedBlock<'game>;
+    type WorldBlock = PlacedBlock;
 
     fn get_name(&self) -> &str {
         &self.name
@@ -191,7 +191,7 @@ impl<'game> World for AxolotlWorld<'game> {
         &self.chunk_map.generator
     }
 
-    fn set_block(&self, location: BlockPosition, block: PlacedBlock<'game>) {
+    fn set_block(&self, location: BlockPosition, block: PlacedBlock) {
         let mut relative_pos = location.clone();
         let position = (relative_pos).chunk();
         let id = block.id();

@@ -6,7 +6,7 @@ use crate::world::chunk::section::{InvalidChunkSection, SectionPosIndex};
 
 use crate::AxolotlGame;
 use axolotl_api::NameSpaceRef;
-use axolotl_items::blocks::MinecraftBlock;
+use axolotl_items::blocks::InnerMinecraftBlock;
 use axolotl_world::chunk::compact_array::CompactArray;
 use axolotl_world::chunk::BlockStates;
 use log::warn;
@@ -15,19 +15,19 @@ use std::mem::discriminant;
 
 /// Returns Err(()) if block is outside of the range
 #[derive(Debug, Clone, Default)]
-pub enum AxolotlBlockSection<'game> {
+pub enum AxolotlBlockSection {
     /// All Air
     #[default]
     Empty,
     /// All of one block type.  Note: Could be air.
-    SingleBlock(PlacedBlock<'game>),
+    SingleBlock(PlacedBlock),
     Full {
         blocks: CompactArray,
         /// Will be Empty if is just air
-        block_palette: Vec<PlacedBlock<'game>>,
+        block_palette: Vec<PlacedBlock>,
     },
 }
-impl Into<BlockStates> for AxolotlBlockSection<'_> {
+impl Into<BlockStates> for AxolotlBlockSection {
     fn into(self) -> BlockStates {
         match self {
             AxolotlBlockSection::Empty => BlockStates {
@@ -54,13 +54,13 @@ impl Into<BlockStates> for AxolotlBlockSection<'_> {
         }
     }
 }
-impl PartialEq for AxolotlBlockSection<'_> {
+impl PartialEq for AxolotlBlockSection {
     fn eq(&self, other: &Self) -> bool {
         discriminant(self) == discriminant(other)
     }
 }
-impl<'game, Pos: Into<SectionPosIndex>, Block: Into<PlacedBlock<'game>>, Iter> From<Iter>
-    for AxolotlBlockSection<'game>
+impl<'game, Pos: Into<SectionPosIndex>, Block: Into<PlacedBlock>, Iter> From<Iter>
+    for AxolotlBlockSection
 where
     Iter: IntoIterator<Item = (Pos, Block)>,
 {
@@ -91,8 +91,8 @@ where
     }
 }
 
-impl<'game> AxolotlBlockSection<'game> {
-    pub fn set_block(&mut self, pos: impl Into<SectionPosIndex>, block: PlacedBlock<'game>) {
+impl AxolotlBlockSection {
+    pub fn set_block(&mut self, pos: impl Into<SectionPosIndex>, block: PlacedBlock) {
         let pos = pos.into();
         match self {
             AxolotlBlockSection::Empty => {
@@ -100,27 +100,7 @@ impl<'game> AxolotlBlockSection<'game> {
                     return;
                 }
                 *self = AxolotlBlockSection::SingleBlock(block);
-            }
-            AxolotlBlockSection::SingleBlock(placed) => {
-                let (loc_x, loc_y, loc_z) = <SectionPosIndex as Into<(u64, u64, u64)>>::into(pos);
-                let mut compact = CompactArray::new(BITS_PER_BLOCK, SECTION_SIZE);
-                for x in 0..SECTION_X_SIZE as u64 {
-                    for y in 0..SECTION_Y_SIZE as u64 {
-                        for z in 0..SECTION_Z_SIZE as u64 {
-                            if x == loc_x && y == loc_y && z == loc_z {
-                                compact.set(SectionPosIndex::from((x, y, z)), 1);
-                            } else {
-                                compact.set(SectionPosIndex::from((x, y, z)), 0);
-                            }
-                        }
-                    }
-                }
-                let placed_blocks = vec![mem::take(placed), block];
-
-                *self = AxolotlBlockSection::Full {
-                    blocks: compact,
-                    block_palette: placed_blocks,
-                };
+                return;
             }
             AxolotlBlockSection::Full {
                 blocks,
@@ -133,10 +113,42 @@ impl<'game> AxolotlBlockSection<'game> {
                     block_palette.push(block);
                     blocks.set(pos, index as u64);
                 }
+                return;
+            }
+            _ => {}
+        }
+        let (loc_x, loc_y, loc_z) = <SectionPosIndex as Into<(u64, u64, u64)>>::into(pos);
+        let mut compact = CompactArray::new(BITS_PER_BLOCK, SECTION_SIZE);
+        for x in 0..SECTION_X_SIZE as u64 {
+            for y in 0..SECTION_Y_SIZE as u64 {
+                for z in 0..SECTION_Z_SIZE as u64 {
+                    if x == loc_x && y == loc_y && z == loc_z {
+                        compact.set(SectionPosIndex::from((x, y, z)), 1);
+                    } else {
+                        compact.set(SectionPosIndex::from((x, y, z)), 0);
+                    }
+                }
             }
         }
+        let replace = mem::replace(
+            self,
+            AxolotlBlockSection::Full {
+                blocks: compact,
+                block_palette: vec![block],
+            },
+        );
+        if let AxolotlBlockSection::SingleBlock(block) = replace {
+            if let AxolotlBlockSection::Full { block_palette, .. } = self {
+                block_palette.push(block);
+                return;
+            } else {
+                unreachable!()
+            }
+        } else {
+            unreachable!()
+        }
     }
-    pub fn get_block(&self, pos: impl Into<SectionPosIndex>) -> Option<&PlacedBlock<'game>> {
+    pub fn get_block(&self, pos: impl Into<SectionPosIndex>) -> Option<&PlacedBlock> {
         match self {
             AxolotlBlockSection::Empty => None,
             AxolotlBlockSection::SingleBlock(placed) => Some(placed),
@@ -158,14 +170,14 @@ impl<'game> AxolotlBlockSection<'game> {
 
     pub fn load(
         &mut self,
-        game: &'game AxolotlGame,
+        game: &AxolotlGame,
         section: &mut BlockStates,
     ) -> Result<(), InvalidChunkSection> {
         if section.data.is_none() {
             return if let Some(block) = section.palette.pop() {
                 let mc_block = game.get_block(&block.name);
                 if let Some(block) = mc_block {
-                    *self = AxolotlBlockSection::SingleBlock(PlacedBlock::from(block));
+                    *self = AxolotlBlockSection::SingleBlock(PlacedBlock::from(block.clone()));
                     Ok(())
                 } else {
                     Err(InvalidChunkSection::InvalidNamespaceKey(block.name))
@@ -189,12 +201,13 @@ impl<'game> AxolotlBlockSection<'game> {
                     for (i, block) in section.palette.iter().enumerate() {
                         let mc_block = game.get_block(&block.name);
                         block_palette[i] = if let Some(block) = mc_block {
-                            PlacedBlock::from(block)
+                            PlacedBlock::from(block.clone())
                         } else {
                             warn!("Invalid block: {}", block.name);
                             PlacedBlock::from(
                                 game.get_block(NameSpaceRef::new("minecraft", "air"))
-                                    .unwrap(),
+                                    .unwrap()
+                                    .clone(),
                             )
                         };
                     }
@@ -204,7 +217,7 @@ impl<'game> AxolotlBlockSection<'game> {
                     for block in section.palette.iter() {
                         let mc_block = game.get_block(&block.name);
                         if let Some(block) = mc_block {
-                            placed_blocks.push(PlacedBlock::from(block));
+                            placed_blocks.push(PlacedBlock::from(block.clone()));
                         } else {
                             warn!("Invalid block: {}", block.name);
                         }
@@ -224,7 +237,7 @@ impl<'game> AxolotlBlockSection<'game> {
         match self {
             AxolotlBlockSection::Empty => true,
             AxolotlBlockSection::SingleBlock(v) => {
-                if let MinecraftBlock::Air = v.block {
+                if let InnerMinecraftBlock::Air = v.block.as_ref() {
                     true
                 } else {
                     false

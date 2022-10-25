@@ -34,7 +34,7 @@ pub enum AxolotlGenerator<'game> {
 impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
     type PerlinNoise = GameNoise;
     type ChunkSettings = ChunkSettings;
-    type Chunk = AxolotlChunk<'game>;
+    type Chunk = AxolotlChunk;
     type GameTy = AxolotlGame;
 
     fn new(game: Arc<Self::GameTy>, chunk_settings: Self::ChunkSettings) -> Self {

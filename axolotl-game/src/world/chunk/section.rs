@@ -67,12 +67,12 @@ pub enum InvalidChunkSection {
 }
 
 #[derive(Debug, Clone)]
-pub struct AxolotlChunkSection<'game> {
-    pub blocks: AxolotlBlockSection<'game>,
+pub struct AxolotlChunkSection {
+    pub blocks: AxolotlBlockSection,
     pub biomes: AxolotlBiomeSection,
     pub y: i8,
 }
-impl Into<ChunkSection> for AxolotlChunkSection<'_> {
+impl Into<ChunkSection> for AxolotlChunkSection {
     fn into(self) -> ChunkSection {
         ChunkSection {
             y_pos: self.y,
@@ -81,12 +81,12 @@ impl Into<ChunkSection> for AxolotlChunkSection<'_> {
         }
     }
 }
-impl Default for AxolotlChunkSection<'_> {
+impl Default for AxolotlChunkSection {
     fn default() -> Self {
         AxolotlChunkSection::new(0)
     }
 }
-impl AxolotlChunkSection<'_> {
+impl AxolotlChunkSection {
     pub fn new(y: i8) -> Self {
         Self {
             blocks: AxolotlBlockSection::default(),

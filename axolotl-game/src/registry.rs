@@ -75,10 +75,7 @@ impl<T: DeserializeOwned> SimpleRegistry<T> {
 
             let path = file.path();
             if file.file_type()?.is_dir() {
-                let name = path
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                    .and_then(|s| Some(s.to_string()));
+                let name = path.file_name().and_then(|s| s.to_str());
                 if let Some(name) = name {
                     Self::load_sub_path(
                         &path,
@@ -91,7 +88,7 @@ impl<T: DeserializeOwned> SimpleRegistry<T> {
             } else {
                 let name = path.file_name().and_then(|s| s.to_str()).and_then(|s| {
                     if s.ends_with(".json") {
-                        Some(s[..s.len() - 5].to_string())
+                        Some(&s[..s.len() - 5])
                     } else {
                         warn!("Non json file {:?}", path);
                         None

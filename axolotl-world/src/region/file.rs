@@ -100,7 +100,7 @@ impl RegionFile {
         // Write the buffer to the file
         file.write_all(&self.write_buffer)?;
 
-        /// Pad the file
+        // Pad the file
         for _ in (length + 5)..(4096 * sector_count) {
             file.write_u8(0)?;
         }

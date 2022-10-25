@@ -9,7 +9,7 @@ pub fn load_game() {
     let config = GameConfig {
         data_dump: PathBuf::from(env!("DATA_DUMP")),
         data_packs: vec![],
-        prismarine_data: PathBuf::from(env!("PRISMARINE_DATA")),
+        axolotl_data: PathBuf::from(env!("AXOLOTL_DATA")),
     };
     let game = axolotl_game::AxolotlGame::load(config).unwrap();
 }

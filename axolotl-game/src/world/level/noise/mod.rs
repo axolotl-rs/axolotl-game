@@ -11,7 +11,6 @@ use axolotl_api::item::block::{Block, BlockState, BlockStateValue};
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_api::world_gen::noise::density::{DensityContext, Function};
 use axolotl_api::world_gen::noise::{ChunkGenerator, NameSpaceKeyOrType, NoiseSetting};
-use axolotl_api::OwnedNameSpaceKey;
 use log::warn;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -45,7 +44,7 @@ pub struct NoiseGenerator<'game> {
 impl<'game> ChunkGenerator<'game> for NoiseGenerator<'game> {
     type PerlinNoise = GameNoise;
     type ChunkSettings = (BiomeSourceSettings, NameSpaceKeyOrType<NoiseSetting>);
-    type Chunk = AxolotlChunk<'game>;
+    type Chunk = AxolotlChunk;
     type GameTy = AxolotlGame;
 
     fn new(game: Arc<AxolotlGame>, chunk_settings: Self::ChunkSettings) -> Self {
