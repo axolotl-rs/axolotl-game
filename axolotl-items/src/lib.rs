@@ -3,7 +3,7 @@ use crate::blocks::raw_state::RawState;
 use crate::blocks::{InnerMinecraftBlock, MinecraftBlock};
 use axolotl_api::game::{Game, Registry};
 
-use axolotl_api::NumericId;
+use axolotl_api::{NamespacedId, NumericId};
 use log::{debug, warn};
 use std::collections::HashMap;
 
@@ -63,17 +63,10 @@ pub fn load_blocks<G: Game>(
 
     let blocks: Vec<RawBlock> =
         serde_json::from_reader(std::fs::File::open(data).unwrap()).unwrap();
-    // Register Air
+
     for block in blocks {
         // Turn block into generic block
-        if block.tags.is_empty() {
-            let block = GenericBlock::new(block, &materials, &mut states);
-            register.register_with_id(
-                &format!("minecraft:{}", block.0.key),
-                block.id(),
-                Arc::new(InnerMinecraftBlock::GenericBlock(block)),
-            );
-        } else {
+        if !block.tags.is_empty() {
             let tag = &block.tags[0];
             match tag.name.as_str() {
                 "BedBlock" => {
@@ -85,18 +78,30 @@ pub fn load_blocks<G: Game>(
                     );
                     continue;
                 }
-                "AirBlock" => {}
+                "AirBlock" => {
+                    let block = InnerMinecraftBlock::Air {
+                        id: block.id,
+                        key: block.name,
+                    };
+                    register.register_with_id(
+                        &format!("minecraft:{}", block.key()),
+                        block.id(),
+                        Arc::new(block),
+                    );
+                    continue;
+                }
                 _ => {
                     warn!("Unknown Top Level Tag: {}. Registering as a Generic could mean missing game features", tag.name);
                 }
             }
-            let block = GenericBlock::new(block, &materials, &mut states);
-            register.register_with_id(
-                &format!("minecraft:{}", block.0.key),
-                block.id(),
-                Arc::new(InnerMinecraftBlock::GenericBlock(block)),
-            );
         }
+        // Default to generic block
+        let block = GenericBlock::new(block, &materials, &mut states);
+        register.register_with_id(
+            &format!("minecraft:{}", block.0.key),
+            block.id(),
+            Arc::new(InnerMinecraftBlock::GenericBlock(block)),
+        );
     }
     Ok(())
 }

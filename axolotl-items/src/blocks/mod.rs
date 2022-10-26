@@ -6,6 +6,7 @@ use axolotl_api::item::block::{Block, BlockPlaceEvent};
 use axolotl_api::item::ItemType;
 
 use axolotl_api::{NamespacedId, NumericId};
+use serde_json::ser::State;
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -20,6 +21,7 @@ pub type MinecraftBlock<G> = Arc<InnerMinecraftBlock<G>>;
 
 #[derive(Debug)]
 pub enum InnerMinecraftBlock<G: Game> {
+    Air { id: usize, key: String },
     GenericBlock(GenericBlock),
     DynamicBlock(Box<dyn Block<G, State = VanillaState>>),
 }
@@ -31,6 +33,7 @@ impl<G: Game> NamespacedId for InnerMinecraftBlock<G> {
                 let block = v.as_ref();
                 block.namespace()
             }
+            InnerMinecraftBlock::Air { .. } => "minecraft",
         }
     }
 
@@ -41,6 +44,7 @@ impl<G: Game> NamespacedId for InnerMinecraftBlock<G> {
                 let block = v.as_ref();
                 block.key()
             }
+            InnerMinecraftBlock::Air { key, .. } => key,
         }
     }
 }
@@ -59,6 +63,7 @@ impl<G: Game> NumericId for InnerMinecraftBlock<G> {
                 let block = id.as_ref();
                 block.id()
             }
+            InnerMinecraftBlock::Air { id, .. } => *id,
         }
     }
 }
@@ -68,6 +73,9 @@ impl<G: Game> EventHandler<BlockPlaceEvent<'_, G>> for InnerMinecraftBlock<G> {
         match self {
             InnerMinecraftBlock::GenericBlock(block) => block.handle(event),
             InnerMinecraftBlock::DynamicBlock(b) => b.as_ref().handle(event),
+            _ => {
+                Ok(false) //??? Can't place air but it shouldnt be called
+            }
         }
     }
 }
@@ -83,6 +91,7 @@ impl<G: Game> Block<G> for InnerMinecraftBlock<G> {
             InnerMinecraftBlock::DynamicBlock(v) => {
                 <dyn Block<G, State = VanillaState> as Block<G>>::create_default_state(v.as_ref())
             }
+            InnerMinecraftBlock::Air { .. } => VanillaState::default(),
         }
     }
 
@@ -92,6 +101,7 @@ impl<G: Game> Block<G> for InnerMinecraftBlock<G> {
             InnerMinecraftBlock::DynamicBlock(v) => {
                 <dyn Block<G, State = VanillaState> as Block<G>>::is_air(v.as_ref())
             }
+            InnerMinecraftBlock::Air { .. } => true,
         }
     }
 
@@ -103,6 +113,7 @@ impl<G: Game> Block<G> for InnerMinecraftBlock<G> {
             InnerMinecraftBlock::DynamicBlock(v) => {
                 <dyn Block<G, State = VanillaState> as Block<G>>::get_default_state(v.as_ref())
             }
+            InnerMinecraftBlock::Air { .. } => Cow::Owned(VanillaState::default()),
         }
     }
 }
