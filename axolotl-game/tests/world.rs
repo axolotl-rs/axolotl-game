@@ -9,7 +9,7 @@ pub fn create_test_world() {
     }
     create_dir_all(&world_folder).unwrap();
 
-    let level_dat = AxolotlLevelDat {
+    let _level_dat = AxolotlLevelDat {
         ..AxolotlLevelDat::default()
     };
 }

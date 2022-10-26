@@ -1,14 +1,14 @@
-use axolotl_api::item::block::Block;
-use axolotl_api::item::Item;
-use axolotl_api::{NamespacedId, NamespacedKey, NumericId, OwnedNameSpaceKey};
-use axolotl_items::blocks::generic_block::{VanillaState, VanillaStateIdOrValue};
+use crate::AxolotlGame;
+
+use axolotl_api::{NamespacedId, NumericId, OwnedNameSpaceKey};
+use axolotl_items::blocks::generic_block::VanillaStateIdOrValue;
 use axolotl_items::blocks::{InnerMinecraftBlock, MinecraftBlock};
 use axolotl_world::chunk::PaletteItem;
-use std::borrow::Cow;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlacedBlock {
     pub state: VanillaStateIdOrValue,
-    pub block: MinecraftBlock,
+    pub block: MinecraftBlock<AxolotlGame>,
 }
 impl Into<PaletteItem> for PlacedBlock {
     fn into(self) -> PaletteItem {
@@ -23,10 +23,16 @@ impl Into<PaletteItem> for PlacedBlock {
     }
 }
 
-impl From<MinecraftBlock> for PlacedBlock {
-    fn from(block: MinecraftBlock) -> Self {
+impl From<MinecraftBlock<AxolotlGame>> for PlacedBlock {
+    fn from(block: MinecraftBlock<AxolotlGame>) -> Self {
         PlacedBlock {
-            state: VanillaStateIdOrValue::Id(block.get_default_state().as_ref().state_id),
+            state: VanillaStateIdOrValue::Id(
+                <InnerMinecraftBlock<AxolotlGame> as axolotl_api::item::block::Block<
+                    AxolotlGame,
+                >>::get_default_state(&block)
+                .as_ref()
+                .state_id,
+            ),
             block,
         }
     }
@@ -34,10 +40,9 @@ impl From<MinecraftBlock> for PlacedBlock {
 
 impl PlacedBlock {
     pub fn is_air(&self) -> bool {
-        match self.block.as_ref() {
-            InnerMinecraftBlock::Air => true,
-            _ => false,
-        }
+        <InnerMinecraftBlock<AxolotlGame> as axolotl_api::item::block::Block<AxolotlGame>>::is_air(
+            &self.block,
+        )
     }
     pub fn id(&self) -> usize {
         self.block.id()

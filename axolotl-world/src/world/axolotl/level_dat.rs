@@ -1,6 +1,6 @@
 use crate::level::{DataPacks, LevelDat, MinecraftVersion};
 use crate::world::axolotl::AxolotlWorldError;
-use axolotl_nbt::serde_impl;
+
 use axolotl_nbt::value::{NameLessValue, Value};
 use axolotl_types::OwnedNameSpaceKey;
 use serde::{Deserialize, Serialize};

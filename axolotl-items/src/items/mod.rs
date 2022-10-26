@@ -1,43 +1,49 @@
-use crate::blocks::MinecraftBlock;
-use axolotl_api::item::{Item, ItemType};
-use axolotl_api::{NamespacedId, NumericId};
-#[derive(Debug, Clone, PartialEq)]
-pub struct BlockItem {
-    pub block: MinecraftBlock,
-    pub id: usize,
-}
-impl ItemType for BlockItem {}
+pub mod block_item;
 
-impl NumericId for BlockItem {
-    fn id(&self) -> usize {
-        self.id
-    }
-}
-impl NamespacedId for BlockItem {
-    fn namespace(&self) -> &str {
-        self.block.namespace()
-    }
+use axolotl_api::events::{Event, EventHandler};
+use axolotl_api::game::Game;
+use axolotl_api::item::{Item, ItemLeftClick, ItemType};
+use axolotl_api::NumericId;
+use block_item::BlockItem;
+use std::sync::Arc;
 
-    fn key(&self) -> &str {
-        self.block.key()
-    }
-}
-
-impl Item for BlockItem {}
+pub type MinecraftItem<G> = Arc<InnerMinecraftItem<G>>;
 
 #[derive(Debug)]
-pub enum MinecraftItem {
-    BlockItem(BlockItem),
+pub enum InnerMinecraftItem<G: Game> {
+    Air,
+    BlockItem(BlockItem<G>),
 }
+impl<G: Game> PartialEq for InnerMinecraftItem<G> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (InnerMinecraftItem::Air, InnerMinecraftItem::Air) => true,
+            (InnerMinecraftItem::BlockItem(a), InnerMinecraftItem::BlockItem(b)) => a.id == b.id,
+            _ => false,
+        }
+    }
+}
+impl<G: Game> ItemType for InnerMinecraftItem<G> {}
 
-impl ItemType for MinecraftItem {}
-
-impl NumericId for MinecraftItem {
+impl<G: Game> NumericId for InnerMinecraftItem<G> {
     fn id(&self) -> usize {
         match self {
-            MinecraftItem::BlockItem(item) => item.id(),
+            InnerMinecraftItem::BlockItem(item) => item.id(),
+            InnerMinecraftItem::Air => 0,
         }
     }
 }
 
-impl Item for MinecraftItem {}
+impl<G: Game> EventHandler<ItemLeftClick<G>> for InnerMinecraftItem<G> {
+    fn handle(
+        &self,
+        event: ItemLeftClick<G>,
+    ) -> Result<<ItemLeftClick<G> as Event>::Result, <ItemLeftClick<G> as Event>::Error> {
+        match self {
+            InnerMinecraftItem::BlockItem(item) => item.handle(event),
+            InnerMinecraftItem::Air => Ok(()),
+        }
+    }
+}
+
+impl<G: Game> Item<G> for InnerMinecraftItem<G> {}

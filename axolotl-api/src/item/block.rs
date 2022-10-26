@@ -1,15 +1,18 @@
+use axolotl_types::NamespacedKey;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer};
 use serde_json::ser::State;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::sync::Arc;
 
+use crate::events::{Event, EventHandler, NoError};
+use crate::game::Game;
 use crate::item::{Item, ItemType};
 use crate::world::{BlockPosition, GenericLocation, World, WorldLocation};
 use crate::world_gen::noise::ChunkGenerator;
-use crate::{NameSpaceRef, NumericId};
-
+use crate::{NameSpaceRef, NamespacedId, NumericId};
 /// A Generic Block State Type
 #[derive(Debug, Clone, PartialEq)]
 pub enum BlockStateValue {
@@ -118,25 +121,60 @@ pub trait BlockState: Debug + Clone {
 
     fn set(&mut self, name: impl Into<String>, value: BlockStateValue);
 }
+pub struct BlockPlaceEvent<'game, G: Game> {
+    pub location: BlockPosition,
+    pub world: G::World,
+    pub block: G::Block,
+    pub item_stack: &'game mut G::ItemStack,
+}
+impl<G: Game> Event for BlockPlaceEvent<'_, G> {
+    type Error = NoError;
+    type Result = bool;
 
-pub trait Block: ItemType + NumericId {
+    fn get_name() -> &'static str {
+        "block_place"
+    }
+}
+pub trait Block<G: Game>:
+    ItemType + NamespacedId + NumericId + for<'event> EventHandler<BlockPlaceEvent<'event, G>>
+{
     type State: BlockState;
 
     fn create_default_state(&self) -> Self::State;
+
+    fn is_air(&self) -> bool;
 
     fn get_default_state(&self) -> Cow<'_, Self::State> {
         Cow::Owned(self.create_default_state())
     }
 }
 
-impl<B> Block for &'_ B
+impl<B, G: Game> Block<G> for Arc<B>
 where
-    B: Block + ItemType,
+    B: Block<G> + NamespacedId + ItemType + for<'event> EventHandler<BlockPlaceEvent<'event, G>>,
+{
+    type State = B::State;
+
+    fn create_default_state(&self) -> Self::State {
+        self.as_ref().create_default_state()
+    }
+
+    fn is_air(&self) -> bool {
+        self.as_ref().is_air()
+    }
+}
+impl<B, G: Game> Block<G> for &'_ B
+where
+    B: Block<G> + NamespacedId + ItemType + for<'event> EventHandler<BlockPlaceEvent<'event, G>>,
 {
     type State = B::State;
 
     fn create_default_state(&self) -> Self::State {
         (*self).create_default_state()
+    }
+
+    fn is_air(&self) -> bool {
+        (*self).is_air()
     }
 
     fn get_default_state(&self) -> Cow<'_, Self::State> {

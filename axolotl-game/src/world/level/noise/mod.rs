@@ -1,18 +1,15 @@
-use crate::world::chunk::{consts, AxolotlChunk};
+use crate::world::chunk::AxolotlChunk;
 
-use crate::world::chunk::blocks_section::AxolotlBlockSection;
-use crate::world::chunk::placed_block::PlacedBlock;
-use crate::world::chunk::section::AxolotlChunkSection;
 use crate::world::level::biome_source::BiomeSourceSettings;
 use crate::{AxolotlGame, GameNoise};
-use ahash::AHashMap;
-use axolotl_api::game::{DataRegistries, Game, Registries, Registry};
-use axolotl_api::item::block::{Block, BlockState, BlockStateValue};
+
+use axolotl_api::game::{DataRegistries, Game, Registry};
+
 use axolotl_api::world_gen::chunk::ChunkPos;
-use axolotl_api::world_gen::noise::density::{DensityContext, Function};
+use axolotl_api::world_gen::noise::density::DensityContext;
 use axolotl_api::world_gen::noise::{ChunkGenerator, NameSpaceKeyOrType, NoiseSetting};
 use log::warn;
-use std::collections::HashMap;
+
 use std::sync::Arc;
 
 pub struct ChunkContext {
@@ -73,7 +70,7 @@ impl<'game> ChunkGenerator<'game> for NoiseGenerator<'game> {
         return chunk;
     }
 
-    fn generate_chunk_into(&self, chunk: &mut Self::Chunk) {
+    fn generate_chunk_into(&self, _chunk: &mut Self::Chunk) {
         warn!("Unimplemented chunk generation");
     }
 }

@@ -1,7 +1,7 @@
 use crate::blocks::generic_block::VanillaState;
-use ahash::AHashMap;
+
 use serde::de::{MapAccess, Visitor};
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 use std::fmt::Formatter;
 
 #[derive(Debug)]

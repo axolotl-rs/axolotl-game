@@ -6,7 +6,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 use axolotl_api::game::{Game, Registry};
-use axolotl_api::world_gen::chunk::ChunkPos;
+
 use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
 use serde::de::{MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};
@@ -37,7 +37,7 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
     type Chunk = AxolotlChunk;
     type GameTy = AxolotlGame;
 
-    fn new(game: Arc<Self::GameTy>, chunk_settings: Self::ChunkSettings) -> Self {
+    fn new(_game: Arc<Self::GameTy>, _chunk_settings: Self::ChunkSettings) -> Self {
         todo!()
     }
 

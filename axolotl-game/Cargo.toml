@@ -18,6 +18,7 @@ tux_lockfree = { git = "https://github.com/wyatt-herkamp/tux_lockfree.git" }
 axolotl-noise = { git = "https://github.com/axolotl-rs/axolotl-noise.git", features = ["minecraft"] }
 axolotl-world = { path = "../axolotl-world" }
 axolotl-items = { path = "../axolotl-items" }
+axolotl-data-rs={git="https://github.com/axolotl-rs/axolotl-data-rs.git"}
 
 parking_lot = "0.12"
 flume = { version = "0.10", features = ["async"] }

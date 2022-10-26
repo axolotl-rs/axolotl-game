@@ -2,8 +2,6 @@ use crate::item::Item;
 use axolotl_nbt::axolotl_nbt_macros::ListSerialize;
 use axolotl_nbt::value::Value;
 use axolotl_types::OwnedNameSpaceKey;
-use serde::de::{Error, SeqAccess};
-use serde::ser::SerializeSeq;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 

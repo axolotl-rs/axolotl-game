@@ -5,6 +5,7 @@ use crate::world::chunk::placed_block::PlacedBlock;
 use crate::world::chunk::section::{InvalidChunkSection, SectionPosIndex};
 
 use crate::AxolotlGame;
+use axolotl_api::item::block::Block;
 use axolotl_api::NameSpaceRef;
 use axolotl_items::blocks::InnerMinecraftBlock;
 use axolotl_world::chunk::compact_array::CompactArray;
@@ -12,7 +13,6 @@ use axolotl_world::chunk::BlockStates;
 use log::warn;
 use std::mem;
 use std::mem::discriminant;
-
 /// Returns Err(()) if block is outside of the range
 #[derive(Debug, Clone, Default)]
 pub enum AxolotlBlockSection {
@@ -237,7 +237,7 @@ impl AxolotlBlockSection {
         match self {
             AxolotlBlockSection::Empty => true,
             AxolotlBlockSection::SingleBlock(v) => {
-                if let InnerMinecraftBlock::Air = v.block.as_ref() {
+                if <InnerMinecraftBlock<AxolotlGame> as Block<AxolotlGame>>::is_air(&v.block) {
                     true
                 } else {
                     false

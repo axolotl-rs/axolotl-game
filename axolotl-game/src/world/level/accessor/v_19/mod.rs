@@ -1,6 +1,5 @@
 pub mod player;
 
-use crate::world::generator::AxolotlGenerator;
 use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter, RawChunk};
 use crate::{AxolotlGame, Error};
 use axolotl_api::world_gen::chunk::ChunkPos;
@@ -14,7 +13,7 @@ use parking_lot::lock_api::RawMutex;
 use parking_lot::Mutex;
 use std::fs::OpenOptions;
 use std::sync::atomic::AtomicU8;
-use std::sync::Arc;
+
 use tux_lockfree::map::Removed;
 use tux_lockfree::prelude::{Map, Queue};
 

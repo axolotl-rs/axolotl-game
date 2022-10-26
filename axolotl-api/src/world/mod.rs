@@ -89,7 +89,12 @@ pub trait World: Send + Sync + Hash + Debug {
 
     fn generator(&self) -> &Self::NoiseGenerator;
 
-    fn set_block(&self, location: BlockPosition, block: Self::WorldBlock);
+    fn set_block(
+        &self,
+        location: BlockPosition,
+        block: Self::WorldBlock,
+        require_loaded: bool,
+    ) -> bool;
     ///
     /// Rules for the group set chunk
     /// 1. They must all be in the same chunk

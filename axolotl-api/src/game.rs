@@ -1,7 +1,10 @@
+use crate::item::block::Block;
+use crate::item::{Item, ItemStack};
 use crate::{NamespacedKey, OwnedNameSpaceKey};
 use paste::paste;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Debug;
 
 use crate::world_gen::noise::density::loading::DensityLoader;
 use crate::world_gen::noise::density::perlin::Perlin;
@@ -21,10 +24,12 @@ pub struct AxolotlVersion {
     pub supported_versions: HashMap<String, SupportedVersion>,
 }
 
-pub trait Game: Sized {
+pub trait Game: Sized + Debug {
     type World: crate::world::World;
     type Biome: crate::world_gen::biome::Biome;
-
+    type Block: Block<Self>;
+    type Item: Item<Self>;
+    type ItemStack: ItemStack<Self>;
     type DensityLoader: DensityLoader;
     type Perlin: Perlin<Noise = Noise, Seed = [u8; 16]>;
     type Registries: Registries<Self>;

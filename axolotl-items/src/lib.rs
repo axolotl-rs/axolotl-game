@@ -1,14 +1,17 @@
 use crate::blocks::generic_block::GenericBlock;
 use crate::blocks::raw_state::RawState;
 use crate::blocks::{InnerMinecraftBlock, MinecraftBlock};
-use axolotl_api::game::Registry;
+use axolotl_api::game::{Game, Registry};
 
 use axolotl_api::NumericId;
-use log::debug;
+use log::{debug, warn};
 use std::collections::HashMap;
+
+use crate::blocks::v19::bed::BedBlock;
 
 use ahash::HashMapExt;
 use axolotl_data_rs::blocks::{Block as RawBlock, Material};
+
 use std::path::PathBuf;
 use std::sync::Arc;
 use thiserror::Error;
@@ -18,7 +21,6 @@ pub mod items;
 pub mod materials;
 #[test]
 pub fn test() {}
-const HARD_CODED_BLOCKS: &str = include_str!("blocks/hard_coded/hard_coded.json");
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Failed to load block file")]
@@ -44,11 +46,11 @@ pub fn load_materials(
     Ok(materials)
 }
 
-pub fn load_blocks(
+pub fn load_blocks<G: Game>(
     minecraft_data: PathBuf,
     data_dump: PathBuf,
     materials: &ahash::HashMap<String, Arc<Material>>,
-    register: &mut impl Registry<MinecraftBlock>,
+    register: &mut impl Registry<MinecraftBlock<G>>,
 ) -> Result<(), Error> {
     // Load states from Minecraft Data Dump
     debug!("Loading block states");
@@ -62,18 +64,32 @@ pub fn load_blocks(
     let blocks: Vec<RawBlock> =
         serde_json::from_reader(std::fs::File::open(data).unwrap()).unwrap();
     // Register Air
-    register.register_with_id("minecraft:air", 0, Arc::new(InnerMinecraftBlock::Air));
-    // Loop through all blocks
     for block in blocks {
-        // Skip Air
-        if block.id == 0 {
-            continue;
-        }
-        // Check if block is hard coded
-        if let Some(v) = blocks::hard_coded::register_hard_coded(block.id) {
-            register.register_with_id(&block.name, block.id as usize, v);
+        // Turn block into generic block
+        if block.tags.is_empty() {
+            let block = GenericBlock::new(block, &materials, &mut states);
+            register.register_with_id(
+                &format!("minecraft:{}", block.0.key),
+                block.id(),
+                Arc::new(InnerMinecraftBlock::GenericBlock(block)),
+            );
         } else {
-            // Turn block into generic block
+            let tag = &block.tags[0];
+            match tag.name.as_str() {
+                "BedBlock" => {
+                    let block = BedBlock::new(block, &materials, &mut states);
+                    register.register_with_id(
+                        &format!("minecraft:{}", block.key),
+                        block.id(),
+                        Arc::new(InnerMinecraftBlock::DynamicBlock(Box::new(block))),
+                    );
+                    continue;
+                }
+                "AirBlock" => {}
+                _ => {
+                    warn!("Unknown Top Level Tag: {}. Registering as a Generic could mean missing game features", tag.name);
+                }
+            }
             let block = GenericBlock::new(block, &materials, &mut states);
             register.register_with_id(
                 &format!("minecraft:{}", block.0.key),

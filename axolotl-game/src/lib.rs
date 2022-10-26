@@ -1,5 +1,7 @@
+#![allow(unused)]
 extern crate core;
 
+pub mod item_stack;
 mod registry;
 pub mod world;
 
@@ -48,13 +50,16 @@ use axolotl_api::world_gen::biome::vanilla::DataPackBiome;
 
 use axolotl_api::world_gen::noise::{Noise, NoiseSetting};
 use axolotl_api::NamespacedKey;
+
 use axolotl_nbt::serde_impl;
 pub(crate) use get_type;
 use log::{debug, info};
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
 
+use crate::item_stack::AxolotlItemStack;
 use axolotl_items::blocks::MinecraftBlock;
+use axolotl_items::items::MinecraftItem;
 use axolotl_world::level::MinecraftVersion;
 use registry::SimpleRegistry;
 use thiserror::Error;
@@ -129,6 +134,7 @@ impl AxolotlGame {
             &mut block_registry,
         )
         .unwrap();
+
         let registries = AxolotlRegistries {
             biomes: SimpleRegistry::load_from_path(
                 config
@@ -150,7 +156,7 @@ impl AxolotlGame {
             axolotl_version,
         })
     }
-    pub fn get_block(&self, _ey: impl NamespacedKey) -> Option<&MinecraftBlock> {
+    pub fn get_block(&self, _ey: impl NamespacedKey) -> Option<&MinecraftBlock<AxolotlGame>> {
         todo!("get_block")
     }
 }
@@ -166,6 +172,9 @@ impl Debug for AxolotlGame {
 impl Game for AxolotlGame {
     type World = AxolotlWorld<'static>;
     type Biome = DataPackBiome;
+    type Block = MinecraftBlock<Self>;
+    type Item = MinecraftItem<Self>;
+    type ItemStack = AxolotlItemStack;
 
     type DensityLoader = AxolotlDensityLoader;
     type Perlin = GameNoise;
@@ -190,7 +199,7 @@ impl Game for AxolotlGame {
 }
 pub struct AxolotlRegistries {
     pub biomes: SimpleRegistry<DataPackBiome>,
-    pub blocks: SimpleRegistry<MinecraftBlock>,
+    pub blocks: SimpleRegistry<MinecraftBlock<AxolotlGame>>,
 }
 impl Registries<AxolotlGame> for AxolotlRegistries {
     type BiomeRegistry = SimpleRegistry<DataPackBiome>;

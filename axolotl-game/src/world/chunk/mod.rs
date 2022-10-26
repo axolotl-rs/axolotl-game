@@ -3,7 +3,7 @@ use axolotl_api::world::BlockPosition;
 use log::warn;
 use parking_lot::RwLock;
 use std::fmt::Debug;
-use std::ops::{Deref, DerefMut};
+use std::ops::DerefMut;
 use std::sync::atomic::AtomicBool;
 use tux_lockfree::map::{Map, Removed};
 use tux_lockfree::queue::Queue;
@@ -80,7 +80,7 @@ impl<'game> IntoRawChunk<'game> for AxolotlChunk {
                 *section = Default::default();
             }
 
-            if let Some(biome_section) = raw_section.biomes.as_mut() {
+            if let Some(_biome_section) = raw_section.biomes.as_mut() {
                 warn!("Biome section not implemented");
             } else {
                 *section = Default::default();
@@ -173,7 +173,7 @@ where
         update: Option<(BlockPosition, PlacedBlock)>,
     ) -> Result<(), Error> {
         let pos = ChunkPos::new(x, z);
-        let mut chunk = if let Some(dead) = self.dead_chunks.pop() {
+        let chunk = if let Some(dead) = self.dead_chunks.pop() {
             dead
         } else {
             AxolotlChunk::new(pos)

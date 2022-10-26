@@ -1,10 +1,12 @@
 use crate::blocks::raw_state::RawState;
-use crate::materials::BlockMaterial;
 use ahash::{AHashMap, HashMap};
-use axolotl_api::item::block::{Block, BlockState, BlockStateValue};
-use axolotl_api::item::{Item, ItemType};
-use axolotl_api::{NameSpaceRef, NamespacedId, NumericId};
+use axolotl_api::events::{EventHandler, NoError};
+use axolotl_api::game::Game;
+use axolotl_api::item::block::{Block, BlockPlaceEvent, BlockState, BlockStateValue};
+use axolotl_api::item::ItemType;
+use axolotl_api::{NamespacedId, NumericId};
 use axolotl_data_rs::blocks::{Block as RawBlock, Material};
+
 use serde::de::{MapAccess, Visitor};
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -91,15 +93,34 @@ pub enum BoundingBox {
 #[derive(Debug, Clone)]
 pub struct BlockProperties {
     pub material: Arc<Material>,
-
+    pub is_air: bool,
     pub key: String,
     pub id: usize,
     pub default_state: usize,
     pub states: Vec<VanillaState>,
 }
+impl BlockProperties {
+    pub fn process_state(
+        key: &str,
+        raw_states: &mut std::collections::HashMap<String, RawState>,
+    ) -> (Vec<VanillaState>, usize) {
+        let mut states = Vec::new();
+        let mut default_state = 0;
+        let raw_state = raw_states.remove(&format!("minecraft:{}", key));
+        if let Some(raw_state) = raw_state {
+            for (index, state) in raw_state.states.into_iter().enumerate() {
+                if state.default {
+                    default_state = index;
+                }
+                states.push(state);
+            }
+        }
+        (states, default_state)
+    }
+}
 
 #[derive(Debug, Clone)]
-pub struct GenericBlock(pub(crate) BlockProperties);
+pub struct GenericBlock(pub BlockProperties);
 impl NamespacedId for GenericBlock {
     fn namespace(&self) -> &str {
         "minecraft"
@@ -120,17 +141,7 @@ impl GenericBlock {
         materials: &HashMap<String, Arc<Material>>,
         raw_states: &mut std::collections::HashMap<String, RawState>,
     ) -> Self {
-        let mut states = Vec::new();
-        let mut default_state = 0;
-        let raw_state = raw_states.remove(&format!("minecraft:{}", raw_block.name));
-        if let Some(raw_state) = raw_state {
-            for (index, state) in raw_state.states.into_iter().enumerate() {
-                if state.default {
-                    default_state = index;
-                }
-                states.push(state);
-            }
-        }
+        let (states, default_state) = BlockProperties::process_state(&raw_block.name, raw_states);
 
         let value = BlockProperties {
             material: materials
@@ -141,17 +152,29 @@ impl GenericBlock {
             key: raw_block.name,
             states,
             default_state,
+            is_air: raw_block.properties.is_air,
         };
         Self(value)
     }
 }
 impl ItemType for GenericBlock {}
 
-impl Block for GenericBlock {
+impl<G: Game> EventHandler<BlockPlaceEvent<'_, G>> for GenericBlock {
+    fn handle(&self, _event: BlockPlaceEvent<G>) -> Result<bool, NoError> {
+        // TODO: Implement
+        Ok(true)
+    }
+}
+
+impl<G: Game> Block<G> for GenericBlock {
     type State = VanillaState;
 
     fn create_default_state(&self) -> Self::State {
         self.0.states[self.0.default_state].clone()
+    }
+    #[inline(always)]
+    fn is_air(&self) -> bool {
+        self.0.is_air
     }
 
     fn get_default_state(&self) -> Cow<'_, Self::State> {

@@ -7,7 +7,6 @@ use axolotl_api::world::World;
 use parking_lot::RwLock;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use uuid::Uuid;
 
 pub trait WorldResourcePool {
     fn world_group(&self) -> &WorldGrouping;

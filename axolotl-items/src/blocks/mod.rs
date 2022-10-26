@@ -1,80 +1,108 @@
 pub mod generic_block;
-pub mod hard_coded;
 pub(crate) mod raw_state;
+pub mod v19;
 
-use axolotl_api::item::block::{Block, BlockState, BlockStateValue};
-use axolotl_api::item::{Item, ItemType};
-use axolotl_api::world::BlockPosition;
-use axolotl_api::{NameSpaceRef, NamespacedId, NamespacedKey, NumericId, OwnedNameSpaceKey};
+use axolotl_api::item::block::{Block, BlockPlaceEvent};
+use axolotl_api::item::ItemType;
+
+use axolotl_api::{NamespacedId, NumericId};
 use std::borrow::Cow;
+use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::blocks::generic_block::VanillaState;
-use crate::blocks::hard_coded::HardCodedBlock;
-use ahash::AHashMap;
+
+use axolotl_api::events::{EventHandler, NoError};
+use axolotl_api::game::Game;
 use generic_block::GenericBlock;
 
-pub type MinecraftBlock = Arc<InnerMinecraftBlock>;
+pub type MinecraftBlock<G> = Arc<InnerMinecraftBlock<G>>;
 
 #[derive(Debug)]
-pub enum InnerMinecraftBlock {
-    Air,
+pub enum InnerMinecraftBlock<G: Game> {
     GenericBlock(GenericBlock),
-    HardCodedBlock(Box<dyn HardCodedBlock>),
+    DynamicBlock(Box<dyn Block<G, State = VanillaState>>),
 }
-impl NamespacedId for InnerMinecraftBlock {
+impl<G: Game> NamespacedId for InnerMinecraftBlock<G> {
     fn namespace(&self) -> &str {
         match self {
-            InnerMinecraftBlock::Air => "minecraft",
             InnerMinecraftBlock::GenericBlock(block) => block.namespace(),
-            InnerMinecraftBlock::HardCodedBlock(block) => block.namespace(),
+            InnerMinecraftBlock::DynamicBlock(v) => {
+                let block = v.as_ref();
+                block.namespace()
+            }
         }
     }
 
     fn key(&self) -> &str {
         match self {
-            InnerMinecraftBlock::Air => "air",
             InnerMinecraftBlock::GenericBlock(block) => block.key(),
-            InnerMinecraftBlock::HardCodedBlock(block) => block.key(),
+            InnerMinecraftBlock::DynamicBlock(v) => {
+                let block = v.as_ref();
+                block.key()
+            }
         }
     }
 }
-impl PartialEq for InnerMinecraftBlock {
+impl<G: Game> PartialEq for InnerMinecraftBlock<G> {
     fn eq(&self, other: &Self) -> bool {
         self.id() == other.id()
     }
 }
-impl<'game> ItemType for InnerMinecraftBlock {}
+impl<'game, G: Game> ItemType for InnerMinecraftBlock<G> {}
 
-impl NumericId for InnerMinecraftBlock {
+impl<G: Game> NumericId for InnerMinecraftBlock<G> {
     fn id(&self) -> usize {
         match self {
-            InnerMinecraftBlock::Air => 0,
             InnerMinecraftBlock::GenericBlock(block) => block.id(),
-            InnerMinecraftBlock::HardCodedBlock(block) => block.id(),
+            InnerMinecraftBlock::DynamicBlock(id) => {
+                let block = id.as_ref();
+                block.id()
+            }
         }
     }
 }
 
-impl Block for InnerMinecraftBlock {
+impl<G: Game> EventHandler<BlockPlaceEvent<'_, G>> for InnerMinecraftBlock<G> {
+    fn handle(&self, event: BlockPlaceEvent<G>) -> Result<bool, NoError> {
+        match self {
+            InnerMinecraftBlock::GenericBlock(block) => block.handle(event),
+            InnerMinecraftBlock::DynamicBlock(b) => b.as_ref().handle(event),
+        }
+    }
+}
+
+impl<G: Game> Block<G> for InnerMinecraftBlock<G> {
     type State = VanillaState;
 
     fn create_default_state(&self) -> Self::State {
         match self {
-            InnerMinecraftBlock::Air => {
-                let mut state = VanillaState::default();
-                state.state_id = 0;
-                state
+            InnerMinecraftBlock::GenericBlock(v) => {
+                <GenericBlock as Block<G>>::create_default_state(v)
             }
-            InnerMinecraftBlock::GenericBlock(v) => v.create_default_state(),
-            InnerMinecraftBlock::HardCodedBlock(v) => v.create_default_state(),
+            InnerMinecraftBlock::DynamicBlock(v) => {
+                <dyn Block<G, State = VanillaState> as Block<G>>::create_default_state(v.as_ref())
+            }
         }
     }
+
+    fn is_air(&self) -> bool {
+        match self {
+            InnerMinecraftBlock::GenericBlock(v) => <GenericBlock as Block<G>>::is_air(v),
+            InnerMinecraftBlock::DynamicBlock(v) => {
+                <dyn Block<G, State = VanillaState> as Block<G>>::is_air(v.as_ref())
+            }
+        }
+    }
+
     fn get_default_state(&self) -> Cow<'_, Self::State> {
         match self {
-            InnerMinecraftBlock::Air => Cow::Owned(VanillaState::default()),
-            InnerMinecraftBlock::GenericBlock(v) => v.get_default_state(),
-            InnerMinecraftBlock::HardCodedBlock(v) => v.get_default_state(),
+            InnerMinecraftBlock::GenericBlock(v) => {
+                <GenericBlock as Block<G>>::get_default_state(v)
+            }
+            InnerMinecraftBlock::DynamicBlock(v) => {
+                <dyn Block<G, State = VanillaState> as Block<G>>::get_default_state(v.as_ref())
+            }
         }
     }
 }

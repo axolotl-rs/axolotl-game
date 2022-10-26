@@ -153,9 +153,9 @@ impl RegionFile {
             // Write the buffer to the file
             file.write_all(&self.write_buffer)?;
 
-            /// Calculate the sector count
+            // Calculate the sector count
             let sector_count = (number / 4096) + 1;
-            /// Pad the file
+            // Pad the file
             for _ in (number + 5)..(4096 * sector_count) {
                 file.write_u8(0)?;
             }

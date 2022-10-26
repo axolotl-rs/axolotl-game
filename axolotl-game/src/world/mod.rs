@@ -191,7 +191,12 @@ impl<'game> World for AxolotlWorld<'game> {
         &self.chunk_map.generator
     }
 
-    fn set_block(&self, location: BlockPosition, block: PlacedBlock) {
+    fn set_block(
+        &self,
+        location: BlockPosition,
+        block: PlacedBlock,
+        required_loaded: bool,
+    ) -> bool {
         let mut relative_pos = location.clone();
         let position = (relative_pos).chunk();
         let id = block.id();
@@ -202,13 +207,17 @@ impl<'game> World for AxolotlWorld<'game> {
             drop(guard);
             drop(value);
             self.send_block_update(location, id);
-        } else {
+            true
+        } else if required_loaded {
             debug!("Chunk not loading. Will load chunk and set block");
             self.chunk_map.queue.push(ChunkUpdate::Load {
                 x: position.x(),
                 z: position.z(),
                 set_block: Some((location, block)),
             });
+            true
+        } else {
+            false
         }
     }
 
