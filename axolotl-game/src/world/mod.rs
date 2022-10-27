@@ -208,7 +208,7 @@ impl<'game> World for AxolotlWorld<'game> {
             drop(value);
             self.send_block_update(location, id);
             true
-        } else if required_loaded {
+        } else if !required_loaded {
             debug!("Chunk not loading. Will load chunk and set block");
             self.chunk_map.queue.push(ChunkUpdate::Load {
                 x: position.x(),

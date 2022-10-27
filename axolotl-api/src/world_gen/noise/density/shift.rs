@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use crate::game::{DataRegistries, Game, Registry};
-use crate::world_gen::dimension::Value;
+use crate::world_gen::dimension::MonsterSpawnLightLevel;
 use crate::world_gen::noise::density::groups::{define_group, define_group_def};
 use crate::world_gen::noise::density::loading::{
     get_constant, get_noise, DensityLoader, FunctionArgument,

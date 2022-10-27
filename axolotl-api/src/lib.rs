@@ -10,7 +10,9 @@ use std::sync::Arc;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 
+pub mod chat;
 mod color;
+pub mod data;
 pub mod effects;
 pub mod enchantments;
 pub mod events;

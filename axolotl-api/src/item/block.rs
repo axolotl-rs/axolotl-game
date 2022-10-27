@@ -121,9 +121,10 @@ pub trait BlockState: Debug + Clone {
 
     fn set(&mut self, name: impl Into<String>, value: BlockStateValue);
 }
+/// Block Place Event
 pub struct BlockPlaceEvent<'game, G: Game> {
     pub location: BlockPosition,
-    pub world: G::World,
+    pub world: &'game G::World,
     pub block: G::Block,
     pub item_stack: &'game mut G::ItemStack,
 }

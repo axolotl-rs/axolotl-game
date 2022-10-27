@@ -1,15 +1,25 @@
 use crate::Error;
 use ahash::AHashMap;
 use axolotl_api::game::Registry;
+use axolotl_nbt::binary::Binary;
+use axolotl_nbt::{serde_impl, NBTDataType, NBTType, Tag};
 use log::warn;
 use serde::de::DeserializeOwned;
+use serde::ser::SerializeMap;
+use serde::Serialize;
 use std::path::Path;
-
+#[derive(Debug, Serialize)]
+pub struct SerializeRegistry<'registry, T: Serialize> {
+    pub value: &'registry Vec<T>,
+    #[serde(rename = "type")]
+    pub registry_name: &'registry str,
+}
 #[derive(Debug, Default)]
 pub struct SimpleRegistry<T> {
     pub key_map: AHashMap<String, usize>,
     pub values: Vec<T>,
     pub next_id: usize,
+    pub name: Option<String>,
 }
 impl<T> SimpleRegistry<T> {
     pub fn new() -> Self {
@@ -17,9 +27,12 @@ impl<T> SimpleRegistry<T> {
             key_map: Default::default(),
             values: vec![],
             next_id: 0,
+            name: None,
         }
     }
 }
+
+impl<T: Serialize> SimpleRegistry<T> {}
 impl<T: DeserializeOwned> SimpleRegistry<T> {
     pub fn load_from_path(path: impl AsRef<Path>) -> Result<Self, Error> {
         let mut registry = SimpleRegistry::new();

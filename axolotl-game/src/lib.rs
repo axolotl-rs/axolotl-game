@@ -1,6 +1,7 @@
 #![allow(unused)]
 extern crate core;
 
+pub mod chat;
 pub mod item_stack;
 mod registry;
 pub mod world;
@@ -57,7 +58,10 @@ use log::{debug, info};
 use std::fmt::{Debug, Formatter};
 use std::path::PathBuf;
 
+use crate::chat::AxolotlChatType;
 use crate::item_stack::AxolotlItemStack;
+use axolotl_api::world::{BlockPosition, World};
+use axolotl_api::world_gen::dimension::Dimension;
 use axolotl_items::blocks::MinecraftBlock;
 use axolotl_items::items::MinecraftItem;
 use axolotl_world::level::MinecraftVersion;
@@ -116,6 +120,13 @@ impl AxolotlGame {
                     .join("worldgen")
                     .join("noise_settings"),
             )?,
+            dimensions: SimpleRegistry::load_from_path(
+                config
+                    .data_dump
+                    .join("reports")
+                    .join("minecraft")
+                    .join("dimension_type"),
+            )?,
         };
         let density_loader = AxolotlDensityLoader(SimpleRegistry::load_from_path(
             config
@@ -125,6 +136,13 @@ impl AxolotlGame {
                 .join("worldgen")
                 .join("density_function"),
         )?);
+        let chat_types = SimpleRegistry::load_from_path(
+            config
+                .data_dump
+                .join("reports")
+                .join("minecraft")
+                .join("chat_type"),
+        )?;
         let materials = axolotl_items::load_materials(config.axolotl_data.clone()).unwrap();
         let mut block_registry = SimpleRegistry::new();
         axolotl_items::load_blocks(
@@ -145,6 +163,7 @@ impl AxolotlGame {
                     .join("biome"),
             )?,
             blocks: block_registry,
+            chat_types,
         };
 
         // TODO: Load Data Packs
@@ -177,9 +196,16 @@ impl Game for AxolotlGame {
     type ItemStack = AxolotlItemStack;
 
     type DensityLoader = AxolotlDensityLoader;
-    type Perlin = GameNoise;
     type Registries = AxolotlRegistries;
     type DataRegistries = AxolotlDataRegistries;
+    type ChatType = AxolotlChatType;
+
+    fn create_placed_block(
+        &self,
+        block: Self::Block,
+    ) -> <<Self as Game>::World as World>::WorldBlock {
+        todo!("create_placed_block")
+    }
 
     fn registries(&self) -> &Self::Registries {
         &self.registries
@@ -200,26 +226,56 @@ impl Game for AxolotlGame {
 pub struct AxolotlRegistries {
     pub biomes: SimpleRegistry<DataPackBiome>,
     pub blocks: SimpleRegistry<MinecraftBlock<AxolotlGame>>,
+    pub chat_types: SimpleRegistry<AxolotlChatType>,
 }
 impl Registries<AxolotlGame> for AxolotlRegistries {
     type BiomeRegistry = SimpleRegistry<DataPackBiome>;
+    type BlockRegistry = SimpleRegistry<MinecraftBlock<AxolotlGame>>;
+    type ItemRegistry = SimpleRegistry<MinecraftItem<AxolotlGame>>;
+    type ChatTypeRegistry = SimpleRegistry<AxolotlChatType>;
 
     fn get_biome_registry(&self) -> &Self::BiomeRegistry {
         &self.biomes
     }
 
+    fn get_block_registry(&self) -> &Self::BlockRegistry {
+        &self.blocks
+    }
+
+    fn get_item_registry(&self) -> &Self::ItemRegistry {
+        todo!()
+    }
+
+    fn get_chat_type_registry(&self) -> &Self::ChatTypeRegistry {
+        &self.chat_types
+    }
+
     fn get_mut_biome_registry(&mut self) -> &mut Self::BiomeRegistry {
         &mut self.biomes
+    }
+
+    fn get_mut_block_registry(&mut self) -> &mut Self::BlockRegistry {
+        todo!()
+    }
+
+    fn get_mut_item_registry(&mut self) -> &mut Self::ItemRegistry {
+        todo!()
+    }
+
+    fn get_mut_chat_type_registry(&mut self) -> &mut Self::ChatTypeRegistry {
+        todo!()
     }
 }
 
 pub struct AxolotlDataRegistries {
     pub noises: SimpleRegistry<Noise>,
     pub noise_settings: SimpleRegistry<NoiseSetting>,
+    pub dimensions: SimpleRegistry<Dimension>,
 }
 impl DataRegistries for AxolotlDataRegistries {
     type NoiseRegistry = SimpleRegistry<Noise>;
     type NoiseSettingRegistry = SimpleRegistry<NoiseSetting>;
+    type DimensionRegistry = SimpleRegistry<Dimension>;
 
     fn get_noise_registry(&self) -> &Self::NoiseRegistry {
         &self.noises
@@ -229,11 +285,19 @@ impl DataRegistries for AxolotlDataRegistries {
         &self.noise_settings
     }
 
+    fn get_dimensions_registry(&self) -> &Self::DimensionRegistry {
+        &self.dimensions
+    }
+
     fn get_mut_noise_registry(&mut self) -> &mut Self::NoiseRegistry {
         &mut self.noises
     }
 
     fn get_mut_noise_setting_registry(&mut self) -> &mut Self::NoiseSettingRegistry {
         &mut self.noise_settings
+    }
+
+    fn get_mut_dimensions_registry(&mut self) -> &mut Self::DimensionRegistry {
+        todo!()
     }
 }

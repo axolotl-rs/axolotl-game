@@ -6,7 +6,6 @@ use axolotl_api::item::block::{Block, BlockPlaceEvent};
 use axolotl_api::item::ItemType;
 
 use axolotl_api::{NamespacedId, NumericId};
-use serde_json::ser::State;
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::sync::Arc;

@@ -28,6 +28,14 @@ pub struct DataPackBiome {
     pub temperature: f32,
 }
 
+#[derive(Debug, Serialize)]
+pub struct BiomePacket<'p> {
+    pub downfall: f32,
+    pub precipitation: &'p VanillaPrecipitation,
+    pub effects: &'p Effects,
+    pub temperature: f32,
+}
+
 impl Biome for DataPackBiome {
     type Precipitation = VanillaPrecipitation;
 

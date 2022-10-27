@@ -95,32 +95,32 @@ impl<'de> Deserialize<'de> for Air {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Effects {
-    fog_color: u32,
-    water_color: u32,
-    water_fog_color: u32,
-    sky_color: u32,
-    mood_sound: MoodSound,
+    pub fog_color: u32,
+    pub water_color: u32,
+    pub water_fog_color: u32,
+    pub sky_color: u32,
+    pub mood_sound: MoodSound,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MoodSound {
-    sound: OwnedNameSpaceKey,
-    tick_delay: u32,
-    offset: f32,
-    block_search_extent: u32,
+    pub sound: OwnedNameSpaceKey,
+    pub tick_delay: u32,
+    pub offset: f32,
+    pub block_search_extent: u32,
 }
 // TODO Add Deserialization and Serialization
 #[derive(Debug, Clone)]
 pub struct Features {
-    raw: GenerationStep,
-    lakes: GenerationStep,
-    local_modifications: GenerationStep,
-    underground_structures: GenerationStep,
-    surface_structures: GenerationStep,
-    underground_ores: GenerationStep,
-    underground_decorations: GenerationStep,
-    fluid_springs: GenerationStep,
-    vegetal_decorations: GenerationStep,
-    top_layer_modifications: GenerationStep,
+    pub raw: GenerationStep,
+    pub lakes: GenerationStep,
+    pub local_modifications: GenerationStep,
+    pub underground_structures: GenerationStep,
+    pub surface_structures: GenerationStep,
+    pub underground_ores: GenerationStep,
+    pub underground_decorations: GenerationStep,
+    pub fluid_springs: GenerationStep,
+    pub vegetal_decorations: GenerationStep,
+    pub top_layer_modifications: GenerationStep,
 }
 
 pub type GenerationStep = Vec<OwnedNameSpaceKey>;

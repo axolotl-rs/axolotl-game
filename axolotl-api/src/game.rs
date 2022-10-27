@@ -1,11 +1,15 @@
+use crate::chat::ChatType;
 use crate::item::block::Block;
 use crate::item::{Item, ItemStack};
+use crate::world::World;
+use crate::world_gen::biome::Biome;
 use crate::{NamespacedKey, OwnedNameSpaceKey};
 use paste::paste;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+use crate::world_gen::dimension::Dimension;
 use crate::world_gen::noise::density::loading::DensityLoader;
 use crate::world_gen::noise::density::perlin::Perlin;
 use crate::world_gen::noise::{Noise, NoiseSetting};
@@ -25,15 +29,20 @@ pub struct AxolotlVersion {
 }
 
 pub trait Game: Sized + Debug {
-    type World: crate::world::World;
-    type Biome: crate::world_gen::biome::Biome;
+    type World: World;
+    type Biome: Biome;
     type Block: Block<Self>;
     type Item: Item<Self>;
     type ItemStack: ItemStack<Self>;
     type DensityLoader: DensityLoader;
-    type Perlin: Perlin<Noise = Noise, Seed = [u8; 16]>;
     type Registries: Registries<Self>;
     type DataRegistries: DataRegistries;
+    type ChatType: ChatType;
+    fn create_placed_block(
+        &self,
+        block: Self::Block,
+    ) -> <<Self as Game>::World as World>::WorldBlock;
+
     fn registries(&self) -> &Self::Registries;
     fn mut_registries(&mut self) -> &mut Self::Registries;
 
@@ -58,7 +67,7 @@ macro_rules! registries {
         }
     };
 }
-registries!(Biome, biome);
+registries!(Biome, biome, Block, block, Item, item, ChatType, chat_type);
 
 macro_rules! data_registries {
     ($($t:ty, $name:ident),*) => {
@@ -78,7 +87,14 @@ macro_rules! data_registries {
         }
     };
 }
-data_registries!(Noise, noise, NoiseSetting, noise_setting);
+data_registries!(
+    Noise,
+    noise,
+    NoiseSetting,
+    noise_setting,
+    Dimension,
+    dimensions
+);
 
 pub trait Registry<T> {
     fn register(&mut self, namespace: impl Into<String>, item: T) -> usize;
