@@ -5,6 +5,7 @@ use axolotl_game::chat::AxolotlChatType;
 use axolotl_game::registry::SerializeRegistry;
 use axolotl_game::GameConfig;
 use axolotl_nbt::serde_impl;
+use axolotl_nbt::value::Value;
 use serde::Serialize;
 use std::fs::File;
 use std::path::PathBuf;
@@ -49,9 +50,8 @@ pub fn test() {
     let file = PathBuf::new().join("registry-codec.json");
     serde_json::to_writer_pretty(File::create(file).unwrap(), &test).unwrap();
 
-    serde_impl::to_writer(
-        &mut File::create(PathBuf::new().join("registry-codec.nbt")).unwrap(),
-        &test,
-    )
-    .unwrap();
+    let nbt_file = PathBuf::new().join("registry-codec.nbt");
+    serde_impl::to_writer(&mut File::create(&nbt_file).unwrap(), &test).unwrap();
+
+    let value: Value = serde_impl::from_reader_binary(&mut File::open(nbt_file).unwrap()).unwrap();
 }

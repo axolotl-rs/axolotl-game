@@ -6,7 +6,7 @@ pub mod item_stack;
 pub mod registry;
 pub mod world;
 
-pub use flume::{Receiver, Sender};
+pub use flume::{bounded, unbounded, Receiver, Sender};
 
 pub struct ChunkPosSplit(i32, i32);
 
