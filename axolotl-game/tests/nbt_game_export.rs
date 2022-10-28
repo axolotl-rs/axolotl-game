@@ -4,6 +4,7 @@ use axolotl_api::world_gen::dimension::Dimension;
 use axolotl_game::chat::AxolotlChatType;
 use axolotl_game::registry::SerializeRegistry;
 use axolotl_game::GameConfig;
+use axolotl_nbt::serde_impl;
 use serde::Serialize;
 use std::fs::File;
 use std::path::PathBuf;
@@ -46,5 +47,11 @@ pub fn test() {
         biome: biomes,
     };
     let file = PathBuf::new().join("registry-codec.json");
-    let json = serde_json::to_writer_pretty(File::create(file).unwrap(), &test).unwrap();
+    serde_json::to_writer_pretty(File::create(file).unwrap(), &test).unwrap();
+
+    serde_impl::to_writer(
+        &mut File::create(PathBuf::new().join("registry-codec.nbt")).unwrap(),
+        &test,
+    )
+    .unwrap();
 }

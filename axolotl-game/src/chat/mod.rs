@@ -23,7 +23,7 @@ impl ForPacket for AxolotlChatType {
         GenericPacketVersion {
             id,
             name: namespace.into(),
-            data: Cow::Borrowed(self),
+            element: Cow::Borrowed(self),
         }
     }
 }

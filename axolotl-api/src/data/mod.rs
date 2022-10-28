@@ -47,7 +47,7 @@ impl<B: Biome<Precipitation = VanillaPrecipitation>> ForPacket for B {
         GenericPacketVersion {
             id,
             name: namespace.into(),
-            data: Cow::Owned(BiomePacket {
+            element: Cow::Owned(BiomePacket {
                 downfall: self.get_downfall(),
                 precipitation: self.get_precipitation(),
                 effects: self.get_effects(),
@@ -69,7 +69,7 @@ impl ForPacket for Dimension {
         GenericPacketVersion {
             id,
             name: namespace.into(),
-            data: Cow::Borrowed(self),
+            element: Cow::Borrowed(self),
         }
     }
 }
