@@ -4,7 +4,7 @@ use crate::world_gen::biome::{Biome, Carvers, Effects, Features, Spawners};
 use crate::world_gen::Precipitation;
 use crate::OwnedNameSpaceKey;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum VanillaPrecipitation {
     Rain,
@@ -14,7 +14,7 @@ pub enum VanillaPrecipitation {
 
 impl Precipitation for VanillaPrecipitation {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DataPackBiome {
     #[serde(skip)]
     pub namespace: Option<OwnedNameSpaceKey>,
@@ -28,7 +28,7 @@ pub struct DataPackBiome {
     pub temperature: f32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct BiomePacket<'p> {
     pub downfall: f32,
     pub precipitation: &'p VanillaPrecipitation,
@@ -44,7 +44,7 @@ impl Biome for DataPackBiome {
     }
 
     fn carvers(&self) -> &Carvers {
-        todo!()
+        &self.carvers
     }
 
     fn get_downfall(&self) -> f32 {
@@ -68,10 +68,10 @@ impl Biome for DataPackBiome {
     }
 
     fn spawners(&self) -> &Spawners {
-        todo!()
+        &self.spawners
     }
 
     fn temperature(&self) -> f32 {
-        todo!()
+        self.temperature
     }
 }

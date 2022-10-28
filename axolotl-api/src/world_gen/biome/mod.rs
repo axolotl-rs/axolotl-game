@@ -30,11 +30,11 @@ pub trait Biome: Debug {
     fn temperature(&self) -> f32;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Carvers {
     pub air: Option<Air>,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Air(Vec<OwnedNameSpaceKey>);
 pub struct AirVisitor;
 impl<'de> Visitor<'de> for AirVisitor {

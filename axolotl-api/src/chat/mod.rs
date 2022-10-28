@@ -1,8 +1,9 @@
 use crate::color::Color;
+use crate::data::ForPacket;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-pub trait ChatType: Debug {
+pub trait ChatType: Debug + ForPacket {
     fn get_chat(&self) -> &ChatTypeDecoration;
 
     fn get_narration(&self) -> &ChatTypeDecoration;

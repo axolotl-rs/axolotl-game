@@ -24,7 +24,9 @@ pub mod player;
 pub mod world;
 pub mod world_gen;
 
-pub use axolotl_types::{BadNamespacedKeyError, NameSpaceRef, NamespacedKey, OwnedNameSpaceKey};
+pub use axolotl_types::{
+    BadNamespacedKeyError, NameSpaceKey, NameSpaceRef, NamespacedKey, OwnedNameSpaceKey,
+};
 
 pub trait NumericId {
     fn id(&self) -> usize;

@@ -14,7 +14,7 @@ pub enum MonsterSpawnLightLevel {
     Uniform(UniformValue),
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Dimension {
     pub ambient_light: f64,
     pub bed_works: bool,
@@ -35,6 +35,7 @@ pub struct Dimension {
     #[serde(rename = "ultrawarm")]
     pub ultra_warm: bool,
 }
+
 #[cfg(test)]
 pub mod tests {
     use crate::world_gen::dimension::light_limit::UniformValue;

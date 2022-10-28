@@ -3,7 +3,7 @@ extern crate core;
 
 pub mod chat;
 pub mod item_stack;
-mod registry;
+pub mod registry;
 pub mod world;
 
 pub use flume::{Receiver, Sender};

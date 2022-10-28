@@ -1,16 +1,20 @@
 use crate::Error;
 use ahash::AHashMap;
+use axolotl_api::data::{ForPacket, PacketVersion};
 use axolotl_api::game::Registry;
+use axolotl_api::{NameSpaceKey, NameSpaceRef, OwnedNameSpaceKey};
 use axolotl_nbt::binary::Binary;
 use axolotl_nbt::{serde_impl, NBTDataType, NBTType, Tag};
 use log::warn;
 use serde::de::DeserializeOwned;
 use serde::ser::SerializeMap;
 use serde::Serialize;
+use std::borrow::Cow;
 use std::path::Path;
+
 #[derive(Debug, Serialize)]
 pub struct SerializeRegistry<'registry, T: Serialize> {
-    pub value: &'registry Vec<T>,
+    pub value: Vec<T>,
     #[serde(rename = "type")]
     pub registry_name: &'registry str,
 }
@@ -31,7 +35,27 @@ impl<T> SimpleRegistry<T> {
         }
     }
 }
-
+impl<T: ForPacket> SimpleRegistry<T> {
+    pub fn as_packet_array(&self) -> Vec<T::PacketVersion<'_>> {
+        let mut values: Vec<T::PacketVersion<'_>> = self
+            .key_map
+            .iter()
+            .map(|(key, id)| {
+                let mut v = key.splitn(2, ":");
+                let id = *id;
+                self.values[id].as_packet_version(
+                    id,
+                    NameSpaceKey::Ref(NameSpaceRef::new(
+                        v.next().expect("Illegal Namespace Key in Registry"),
+                        v.next().expect("Illegal Namespace Key in Registry"),
+                    )),
+                )
+            })
+            .collect();
+        values.sort_by(|a, b| a.id().cmp(&b.id()));
+        values
+    }
+}
 impl<T: Serialize> SimpleRegistry<T> {}
 impl<T: DeserializeOwned> SimpleRegistry<T> {
     pub fn load_from_path(path: impl AsRef<Path>) -> Result<Self, Error> {
