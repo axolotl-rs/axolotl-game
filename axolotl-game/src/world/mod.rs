@@ -3,6 +3,7 @@ use dumbledore::entities::entity::{Entity, EntityLocation};
 use log::{debug, warn};
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tux_lockfree::queue::Queue;
 
@@ -15,8 +16,9 @@ use axolotl_api::world_gen::chunk::ChunkPos;
 use crate::world::chunk::{AxolotlChunk, ChunkMap};
 use crate::world::entity::player::GamePlayer;
 use crate::world::entity::MinecraftEntity;
-use crate::world::generator::AxolotlGenerator;
+use crate::world::generator::{AxolotlGenerator, ChunkSettings};
 use crate::world::level::configs::WorldConfig;
+use axolotl_api::world_gen::noise::ChunkGenerator;
 use axolotl_world::entity::player::PlayerData;
 use chunk::placed_block::PlacedBlock;
 use dumbledore::world::World as ECSWorld;
@@ -32,7 +34,7 @@ mod resource_pool;
 use crate::world::entity::properties::Location;
 use crate::world::level::accessor::v_19::player::Minecraft19PlayerAccess;
 use crate::world::level::accessor::v_19::Minecraft19WorldAccessor;
-use crate::Sender;
+use crate::{AxolotlGame, Sender};
 
 #[derive(Debug)]
 pub enum ChunkUpdate {
@@ -90,12 +92,44 @@ pub struct AxolotlWorld<'game> {
     pub simulation_distance: u8,
     pub entities: Vec<MinecraftEntity>,
     pub game_world: ECSWorld,
-    pub chunk_map: Arc<ChunkMap<'game, Minecraft19WorldAccessor<'game>>>,
+    pub chunk_map: Arc<ChunkMap<'game, Minecraft19WorldAccessor>>,
     pub chunk_tickets: ChunkTickets,
     pub new_players: Queue<(Entity, WorldPlayer)>,
     pub player_access: Arc<Minecraft19PlayerAccess>,
 }
 impl<'game> AxolotlWorld<'game> {
+    pub fn create(
+        game: Arc<AxolotlGame>,
+        uuid: Uuid,
+        name: String,
+        world_config: WorldConfig,
+        render_distance: u8,
+        simulation_distance: u8,
+        directory: PathBuf,
+        chunk_generator: ChunkSettings,
+        player_access: Arc<Minecraft19PlayerAccess>,
+    ) -> Self {
+        Self {
+            uuid,
+            name,
+            world_config,
+            clients: AHashMap::new(),
+            render_distance,
+            simulation_distance,
+            entities: Vec::new(),
+            game_world: ECSWorld::new(64),
+            chunk_map: Arc::new(ChunkMap::new(
+                AxolotlGenerator::new(game.clone(), chunk_generator),
+                Minecraft19WorldAccessor::create(game, directory.clone()).unwrap(),
+            )),
+            chunk_tickets: ChunkTickets {
+                tickets: AHashMap::new(),
+            },
+            new_players: Queue::new(),
+            player_access,
+        }
+    }
+
     pub fn load_player(&self, player: Sender<Arc<PlayerUpdate>>, nbt: PlayerData) {
         let game_player = GamePlayer::from(nbt);
         let (entity, location) = self

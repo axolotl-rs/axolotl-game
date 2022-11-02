@@ -28,7 +28,11 @@ impl SectionPosIndex {
 impl Debug for SectionPosIndex {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let (x, y, z) = <SectionPosIndex as Into<(u64, u64, u64)>>::into(*self);
-        write!(f, "SectionPosIndex(x: {}, y: {}, z: {})", x, y, z)
+        write!(
+            f,
+            "SectionPosIndex(x: {}, y: {}, z: {}) value: {}",
+            x, y, z, self.0
+        )
     }
 }
 impl<T: Into<u64>> From<(T, T, T)> for SectionPosIndex {

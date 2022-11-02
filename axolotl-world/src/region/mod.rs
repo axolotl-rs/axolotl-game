@@ -148,7 +148,7 @@ impl RegionHeader {
     #[inline(always)]
     pub fn get_index(v: impl Into<(i32, i32)>) -> i32 {
         let (x, z) = v.into();
-        ((x % 32) + (z % 32) * 32) * 4
+        ((x % 32) + (z % 32) * 32)
     }
     pub fn get_chunk_location(&self, v: impl Into<(i32, i32)>) -> Option<&RegionLocation> {
         self.locations.get(Self::get_index(v) as usize)

@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 use std::fmt::Formatter;
 
+use serde::ser::SerializeStruct;
 use std::str::FromStr;
 
 pub mod compact_array;
@@ -55,7 +56,12 @@ impl Serialize for PaletteItem {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.name.to_string())
+        let mut str = serializer.serialize_struct("PaletteItem", 2)?;
+        str.serialize_field("Name", &self.name);
+        if !self.properties.is_empty() {
+            str.serialize_field("Properties", &self.properties);
+        }
+        str.end()
     }
 }
 
@@ -133,6 +139,13 @@ pub struct RawChunk {
     pub sections: Vec<ChunkSection>,
     #[serde(rename = "Lights", default)]
     pub lights: Vec<Vec<i16>>,
+
+    #[serde(rename = "Status")]
+    pub status: String,
+    #[serde(rename = "LastUpdate")]
+    pub last_updated: i64,
+    #[serde(rename = "InhabitedTime")]
+    pub inhabited_time: i64,
 }
 
 impl RegionFileType for RawChunk {

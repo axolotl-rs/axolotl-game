@@ -1,10 +1,12 @@
 pub mod v_19;
 
+use crate::world::AxolotlWorld;
 use crate::AxolotlGame;
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_world::chunk::RawChunk;
 use axolotl_world::entity::RawEntities;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct RegionLocation(pub i64, pub i64);
@@ -23,34 +25,30 @@ impl RegionLocation {
     }
 }
 
-pub trait LevelReader<'game> {
+pub trait LevelReader {
     type Error: Debug;
     fn get_chunk_into(
         &self,
         chunk_pos: &ChunkPos,
-        chunk: &mut impl IntoRawChunk<'game>,
+        chunk: &mut impl IntoRawChunk,
     ) -> Result<bool, Self::Error>;
 
     fn get_chunk(&self, chunk_pos: &ChunkPos) -> Result<Option<RawChunk>, Self::Error>;
 }
-pub trait LevelWriter<'game> {
+pub trait LevelWriter {
     type Error: Debug + Into<crate::Error>;
 
-    fn save_chunk(
-        &self,
-        chunk_pos: ChunkPos,
-        chunk: impl IntoRawChunk<'game>,
-    ) -> Result<(), Self::Error>;
+    fn save_chunk(&self, chunk_pos: ChunkPos, chunk: impl IntoRawChunk) -> Result<(), Self::Error>;
     fn save_chunks(
         &self,
         chunks: impl Iterator<Item = (ChunkPos, RawChunk)>,
     ) -> Result<(), Self::Error>;
 }
 
-pub trait IntoRawChunk<'game> {
+pub trait IntoRawChunk {
     fn load_from_chunk(
         &mut self,
-        game: &'game AxolotlGame,
+        game: Arc<AxolotlGame>,
         chunk: &mut RawChunk,
         entities: Option<&mut RawEntities>,
     );

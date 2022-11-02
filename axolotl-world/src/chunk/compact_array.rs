@@ -1,3 +1,5 @@
+use log::debug;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompactArray {
     pub bits_per_block: usize,
@@ -14,14 +16,16 @@ impl Into<Vec<u64>> for CompactArray {
 impl CompactArray {
     pub fn new(bits_per_block: usize, length: usize) -> Self {
         let values_per_u64 = Self::calc_values_per_u64(bits_per_block);
-        let data = vec![0; (length + values_per_u64 as usize - 1) / values_per_u64 as usize];
-        CompactArray {
+
+        let data = vec![0; length / values_per_u64];
+        let array = CompactArray {
             bits_per_block,
             data,
             length,
             values_per_u64,
             mask: Self::calc_mask(bits_per_block),
-        }
+        };
+        array
     }
     pub fn replace_inner(&mut self, data: Vec<u64>) {
         self.data = data;
@@ -95,6 +99,7 @@ impl CompactArray {
     #[inline]
     fn index_bit_value(&self, index: usize) -> (usize, usize) {
         let list_index = (index / self.values_per_u64) as usize;
+
         let bit_offset = (index % self.values_per_u64) * self.bits_per_block;
         (list_index, bit_offset)
     }

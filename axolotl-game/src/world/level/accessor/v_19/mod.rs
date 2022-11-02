@@ -2,42 +2,59 @@ pub mod player;
 
 use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter, RawChunk};
 use crate::{AxolotlGame, Error};
+use ahash::AHashMap;
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_world::entity::RawEntities;
 use axolotl_world::region::file::{RegionFile, RegionFileType};
 use axolotl_world::region::RegionHeader;
+use axolotl_world::world::axolotl::level_dat::AxolotlLevelDat;
 use axolotl_world::world::axolotl::AxolotlWorld as RawWorld;
+use axolotl_world::world::World;
 use itoa::Buffer;
-use log::{debug, warn};
-use parking_lot::lock_api::RawMutex;
-use parking_lot::Mutex;
+use log::{debug, info, warn};
+use parking_lot::lock_api::{RawMutex, RwLockWriteGuard};
+use parking_lot::{Mutex, RawRwLock, RwLock};
+use std::collections::VecDeque;
 use std::fs::OpenOptions;
+use std::path::PathBuf;
 use std::sync::atomic::AtomicU8;
+use std::sync::Arc;
 
-use tux_lockfree::map::Removed;
-use tux_lockfree::prelude::{Map, Queue};
-
-pub const MAX_NUMBER_OPEN_REGIONS: u8 = 16;
+pub const MAX_NUMBER_OPEN_REGIONS: usize = 16;
 #[derive(Debug)]
 pub struct ActiveRegion {
     pub chunks: RegionFile,
     pub entities: RegionFile,
 }
 #[derive(Debug)]
-pub struct Minecraft19WorldAccessor<'game> {
-    pub open_regions: AtomicU8,
-    pub active_regions: Map<(i32, i32), Mutex<ActiveRegion>>,
+pub struct Minecraft19WorldAccessor {
+    pub active_regions: RwLock<AHashMap<(i32, i32), Arc<Mutex<ActiveRegion>>>>,
     pub world: RawWorld,
-    pub dead_chunks: Queue<RawChunk>,
-    pub dead_regions: Queue<(RegionHeader, Vec<u8>)>,
-    pub game: &'game AxolotlGame,
+    pub dead_chunks: Mutex<VecDeque<RawChunk>>,
+    pub dead_regions: Mutex<VecDeque<(RegionHeader, Vec<u8>)>>,
+    pub game: Arc<AxolotlGame>,
 }
-impl<'game> Minecraft19WorldAccessor<'game> {
+
+impl Minecraft19WorldAccessor {
+    pub fn create(game: Arc<AxolotlGame>, path: PathBuf) -> Result<Self, Error> {
+        let world =
+            RawWorld::create(path, AxolotlLevelDat::default()).expect("Failed to create world");
+        Ok(Self {
+            active_regions: RwLock::new(AHashMap::new()),
+            world,
+            dead_chunks: Mutex::new(VecDeque::new()),
+            dead_regions: Mutex::new(VecDeque::new()),
+            game,
+        })
+    }
     pub fn clean(&self) {
-        for x in self.dead_regions.pop_iter() {
+        let mut guard = self.dead_regions.lock();
+        while let Some(x) = guard.pop_front() {
             debug!("Removing dead region {:?}", x);
         }
-        for x in self.dead_chunks.pop_iter() {
+        drop(guard);
+        let mut guard = self.dead_chunks.lock();
+        while let Some(x) = guard.pop_front() {
             debug!("Removing dead chunk {:?}", x);
         }
     }
@@ -56,7 +73,7 @@ impl<'game> Minecraft19WorldAccessor<'game> {
             ));
         return if buf.exists() {
             let mut file = OpenOptions::new().read(true).write(true).open(&buf)?;
-            if let Some((mut header, buffer)) = self.dead_regions.pop() {
+            if let Some((mut header, buffer)) = self.dead_regions.lock().pop_front() {
                 RegionHeader::replace_region_header(
                     &mut file,
                     &mut header.locations,
@@ -73,12 +90,13 @@ impl<'game> Minecraft19WorldAccessor<'game> {
                 Ok(region)
             }
         } else {
+            debug!("Creating new region file {:?}", buf);
             let mut file = OpenOptions::new()
                 .read(true)
-                .create(true)
+                .create_new(true)
                 .write(true)
                 .open(&buf)?;
-            if let Some((mut header, buffer)) = self.dead_regions.pop() {
+            if let Some((mut header, buffer)) = self.dead_regions.lock().pop_front() {
                 header.initialize_and_zero(&mut file)?;
                 let region = RegionFile {
                     file: buf,
@@ -87,33 +105,43 @@ impl<'game> Minecraft19WorldAccessor<'game> {
                 };
                 Ok(region)
             } else {
-                let region = RegionFile::new(buf, false)?;
+                info!("Initializing new region file {:?}", buf);
+                let mut region = RegionFile::new(buf, false)?;
                 Ok(region)
             }
         };
     }
+    fn close_inner(&self, region_loc: &(i32, i32), mut region: ActiveRegion) {
+        if let Err(e) = region.entities.save() {
+            warn!("Failed to save entities for region {:?}: {}", region_loc, e);
+        }
+        if let Err(e) = region.chunks.save() {
+            warn!("Failed to save chunks for region {:?}: {}", region_loc, e);
+        }
+        self.dead_regions
+            .lock()
+            .push_back((region.chunks.region_header, region.chunks.write_buffer));
+        self.dead_regions
+            .lock()
+            .push_back((region.entities.region_header, region.entities.write_buffer));
+        debug!("Closed region {:?}", region_loc);
+    }
     pub fn close_region(&self, region_loc: (i32, i32)) {
-        if let Some(region) = self.active_regions.remove(&region_loc) {
-            match Removed::try_into(region) {
-                Ok((loc, v)) => {
-                    let mut region = v.into_inner();
-                    if let Err(e) = region.entities.save() {
-                        warn!("Failed to save entities for region {:?}: {}", loc, e);
-                    }
-                    if let Err(e) = region.chunks.save() {
-                        warn!("Failed to save chunks for region {:?}: {}", loc, e);
-                    }
-                    self.dead_regions
-                        .push((region.chunks.region_header, region.chunks.write_buffer));
-                    self.dead_regions
-                        .push((region.entities.region_header, region.entities.write_buffer));
-                    debug!("Closed region {:?}", loc);
-                }
+        if let Some(region) = self.active_regions.write().remove(&region_loc) {
+            let mut region = match Arc::try_unwrap(region) {
+                Ok(ok) => ok,
                 Err(err) => {
-                    warn!("Failed to remove region from active regions.");
-                    self.active_regions.reinsert(err);
+                    warn!(
+                        "Attempted to close region {:?} but it was still in use",
+                        region_loc
+                    );
+                    self.active_regions.write().insert(region_loc, err);
+
+                    return;
                 }
             };
+            let region = region.into_inner();
+            self.close_inner(&region_loc, region);
         }
     }
     pub fn region<After, R>(&self, pos: &ChunkPos, after: After) -> Result<R, Error>
@@ -121,67 +149,101 @@ impl<'game> Minecraft19WorldAccessor<'game> {
         After: FnOnce(&mut ActiveRegion) -> Result<R, Error>,
     {
         let region_loc = (pos.0 / 32, pos.1 / 32);
-        if let Some(region) = self.active_regions.get(&region_loc) {
-            let mut guard = region.val().lock();
+        let guard = self.active_regions.read();
+        if let Some(region) = guard.get(&region_loc).cloned() {
+            drop(guard);
+            let mut guard = region.lock();
             after(&mut guard)
         } else {
-            if self.open_regions.load(std::sync::atomic::Ordering::Relaxed)
-                > MAX_NUMBER_OPEN_REGIONS
-            {
-                let mut vec = Vec::with_capacity((MAX_NUMBER_OPEN_REGIONS / 8) as usize);
-
-                for read in self.active_regions.iter() {
-                    if !read.val().is_locked() {
-                        vec.push(*read.key());
-                    }
-                }
-                for key in vec.into_iter() {
-                    self.close_region(key);
-                }
+            drop(guard);
+            let mut guard = self.active_regions.write();
+            if guard.len() >= MAX_NUMBER_OPEN_REGIONS {
+                self.attempt_region_clean(&mut guard)
             }
+            debug!("Opening region {:?}", region_loc);
             let mut active_region = ActiveRegion {
                 chunks: self.open_region_file::<RawChunk>(region_loc)?,
                 entities: self.open_region_file::<RawEntities>(region_loc)?,
             };
             let result = after(&mut active_region);
-            let guard = Mutex::new(active_region);
-            if let Some(v) = self.active_regions.insert(region_loc, guard) {
+            let value = Arc::new(Mutex::new(active_region));
+
+            if let Some(v) = guard.insert(region_loc, value) {
                 warn!("Region loaded twice: {:?}", v);
             }
             result
         }
     }
+
+    /// Attempts to clean up regions by closing ones without active references
+    fn attempt_region_clean(
+        &self,
+        guard: &mut RwLockWriteGuard<RawRwLock, AHashMap<(i32, i32), Arc<Mutex<ActiveRegion>>>>,
+    ) {
+        let len = MAX_NUMBER_OPEN_REGIONS / 2;
+        let mut vec = Vec::with_capacity(len);
+
+        for (index, (key, val)) in guard.iter().enumerate() {
+            if Arc::strong_count(val) == 1 && !val.is_locked() {
+                vec.push(*key);
+            }
+            if index > len {
+                break;
+            }
+        }
+        if vec.is_empty() {
+            warn!("No regions to close increasing number of open regions");
+        } else {
+            for (loc, region) in vec
+                .into_iter()
+                .map(|x| (x, Arc::try_unwrap(guard.remove(&x).unwrap()).unwrap()))
+                .map(|(loc, value)| (loc, value.into_inner()))
+            {
+                self.close_inner(&loc, region);
+            }
+        }
+    }
+    pub fn force_close_all(&self) {
+        let mut guard = self.active_regions.write();
+        for (loc, region) in guard
+            .drain()
+            .map(|(loc, value)| (loc, Arc::try_unwrap(value).unwrap()))
+            .map(|(loc, value)| (loc, value.into_inner()))
+        {
+            self.close_inner(&loc, region);
+        }
+    }
 }
-impl<'game> LevelReader<'game> for Minecraft19WorldAccessor<'game> {
+impl LevelReader for Minecraft19WorldAccessor {
     type Error = crate::Error;
 
     fn get_chunk_into(
         &self,
         chunk_pos: &ChunkPos,
-        chunk: &mut impl IntoRawChunk<'game>,
+        chunk: &mut impl IntoRawChunk,
     ) -> Result<bool, Self::Error> {
         self.region(chunk_pos, |region| {
             let index = RegionHeader::get_index(chunk_pos) as usize;
             if let Some(region_loc) = region.chunks.region_header.locations.get(index) {
                 let region_loc = *region_loc;
-                if let Some(mut v) = self.dead_chunks.pop() {
+                if let Some(mut v) = self.dead_chunks.lock().pop_front() {
                     if region
                         .chunks
                         .read_chunk_in_place(&region_loc, &mut v)?
                         .is_some()
                     {
-                        chunk.load_from_chunk(self.game, &mut v, None);
+                        chunk.load_from_chunk(self.game.clone(), &mut v, None);
 
-                        self.dead_chunks.push(v);
+                        self.dead_chunks.lock().push_back(v);
                         Ok(true)
                     } else {
-                        self.dead_chunks.push(v);
+                        self.dead_chunks.lock().push_back(v);
                         return Ok(false);
                     }
                 } else {
                     if let Some((_, mut raw_chunk)) = region.chunks.read_chunk(&region_loc)? {
-                        chunk.load_from_chunk(self.game, &mut raw_chunk, None);
-                        self.dead_chunks.push(raw_chunk);
+                        chunk.load_from_chunk(self.game.clone(), &mut raw_chunk, None);
+                        self.dead_chunks.lock().push_back(raw_chunk);
                         Ok(true)
                     } else {
                         return Ok(false);
@@ -199,7 +261,7 @@ impl<'game> LevelReader<'game> for Minecraft19WorldAccessor<'game> {
             let index = RegionHeader::get_index(chunk_pos) as usize;
             if let Some(region_loc) = region.chunks.region_header.locations.get(index) {
                 let region_loc = *region_loc;
-                if let Some(mut v) = self.dead_chunks.pop() {
+                if let Some(mut v) = self.dead_chunks.lock().pop_front() {
                     if region
                         .chunks
                         .read_chunk_in_place(&region_loc, &mut v)?
@@ -223,19 +285,15 @@ impl<'game> LevelReader<'game> for Minecraft19WorldAccessor<'game> {
         })
     }
 }
-impl<'game> LevelWriter<'game> for Minecraft19WorldAccessor<'game> {
+impl LevelWriter for Minecraft19WorldAccessor {
     type Error = crate::Error;
 
-    fn save_chunk(
-        &self,
-        chunk_pos: ChunkPos,
-        chunk: impl IntoRawChunk<'game>,
-    ) -> Result<(), Self::Error> {
+    fn save_chunk(&self, chunk_pos: ChunkPos, chunk: impl IntoRawChunk) -> Result<(), Self::Error> {
         self.region(&chunk_pos, |region| {
             let index = RegionHeader::get_index(&chunk_pos) as usize;
             if let Some(region_loc) = region.chunks.region_header.locations.get(index) {
                 let _region_loc = *region_loc;
-                if let Some(mut v) = self.dead_chunks.pop() {
+                if let Some(mut v) = self.dead_chunks.lock().pop_front() {
                     chunk.into_raw_chunk_use(&mut v);
                     region.chunks.write_chunk(v)?;
                     Ok(())

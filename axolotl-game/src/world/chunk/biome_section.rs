@@ -1,3 +1,5 @@
+use crate::world::chunk::section::SectionPosIndex;
+use axolotl_api::world::BlockPosition;
 use axolotl_api::OwnedNameSpaceKey;
 use axolotl_world::chunk::compact_array::CompactArray;
 use std::mem::discriminant;
@@ -11,6 +13,7 @@ pub enum AxolotlBiomeSection {
         biomes: CompactArray,
     },
 }
+
 impl PartialEq for AxolotlBiomeSection {
     fn eq(&self, other: &Self) -> bool {
         discriminant(self) == discriminant(other)
@@ -19,5 +22,20 @@ impl PartialEq for AxolotlBiomeSection {
 impl AxolotlBiomeSection {
     pub fn new(namespace_key: impl Into<OwnedNameSpaceKey>) -> Self {
         AxolotlBiomeSection::SingleBiome(namespace_key.into())
+    }
+
+    pub fn set_biome(&mut self, pos: impl Into<SectionPosIndex>, value: OwnedNameSpaceKey) {
+        // TODO implement full BiomeSection
+        match self {
+            AxolotlBiomeSection::SingleBiome(v) => {
+                *v = value;
+            }
+            AxolotlBiomeSection::Full {
+                biome_palette,
+                biomes,
+            } => {
+                todo!()
+            }
+        }
     }
 }

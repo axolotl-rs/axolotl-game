@@ -1,16 +1,17 @@
 use crate::world::chunk::consts::{
-    BITS_PER_BLOCK, SECTION_SIZE, SECTION_X_SIZE, SECTION_Y_SIZE, SECTION_Z_SIZE,
+    BITS_PER_BLOCK, LONGS_PER_BLOC_SECTION, SECTION_SIZE, SECTION_X_SIZE, SECTION_Y_SIZE,
+    SECTION_Z_SIZE,
 };
 use crate::world::chunk::placed_block::PlacedBlock;
 use crate::world::chunk::section::{InvalidChunkSection, SectionPosIndex};
 
 use crate::AxolotlGame;
 use axolotl_api::item::block::Block;
-use axolotl_api::NameSpaceRef;
+use axolotl_api::{NameSpaceRef, OwnedNameSpaceKey};
 use axolotl_items::blocks::InnerMinecraftBlock;
 use axolotl_world::chunk::compact_array::CompactArray;
-use axolotl_world::chunk::BlockStates;
-use log::warn;
+use axolotl_world::chunk::{BlockStates, PaletteItem};
+use log::{debug, info, warn};
 use std::mem;
 use std::mem::discriminant;
 /// Returns Err(()) if block is outside of the range
@@ -32,7 +33,10 @@ impl Into<BlockStates> for AxolotlBlockSection {
         match self {
             AxolotlBlockSection::Empty => BlockStates {
                 data: None,
-                palette: vec![],
+                palette: vec![PaletteItem {
+                    name: OwnedNameSpaceKey::new("minecraft".to_string(), "air".to_string()),
+                    properties: Default::default(),
+                }],
             },
             AxolotlBlockSection::SingleBlock(block) => BlockStates {
                 data: None,
@@ -65,11 +69,12 @@ where
     Iter: IntoIterator<Item = (Pos, Block)>,
 {
     fn from(iter: Iter) -> Self {
-        let mut blocks = CompactArray::new(BITS_PER_BLOCK, SECTION_SIZE);
+        let mut blocks = CompactArray::new(BITS_PER_BLOCK, LONGS_PER_BLOC_SECTION);
         let mut block_palette = Vec::new();
 
         for (pos, block) in iter {
             let pos = pos.into();
+
             let block = block.into();
             if let Some(v) = block_palette.iter().position(|b| b == &block) {
                 blocks.set(pos, v as u64);
@@ -94,6 +99,7 @@ where
 impl AxolotlBlockSection {
     pub fn set_block(&mut self, pos: impl Into<SectionPosIndex>, block: PlacedBlock) {
         let pos = pos.into();
+
         match self {
             AxolotlBlockSection::Empty => {
                 if block.is_air() {
@@ -122,10 +128,12 @@ impl AxolotlBlockSection {
         for x in 0..SECTION_X_SIZE as u64 {
             for y in 0..SECTION_Y_SIZE as u64 {
                 for z in 0..SECTION_Z_SIZE as u64 {
+                    let pos_index = SectionPosIndex::from((x, y, z));
+
                     if x == loc_x && y == loc_y && z == loc_z {
-                        compact.set(SectionPosIndex::from((x, y, z)), 1);
+                        compact.set(pos_index, 1);
                     } else {
-                        compact.set(SectionPosIndex::from((x, y, z)), 0);
+                        compact.set(pos_index, 0);
                     }
                 }
             }
@@ -224,7 +232,11 @@ impl AxolotlBlockSection {
                     }
 
                     *v = AxolotlBlockSection::Full {
-                        blocks: CompactArray::new_from_vec(BITS_PER_BLOCK, data, SECTION_SIZE),
+                        blocks: CompactArray::new_from_vec(
+                            BITS_PER_BLOCK,
+                            data,
+                            LONGS_PER_BLOC_SECTION,
+                        ),
                         block_palette: placed_blocks,
                     };
                 }

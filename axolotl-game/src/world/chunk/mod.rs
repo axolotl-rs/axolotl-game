@@ -1,17 +1,19 @@
 use axolotl_api::world::BlockPosition;
 
-use log::warn;
+use axolotl_api::OwnedNameSpaceKey;
+use log::{debug, info, warn};
 use parking_lot::RwLock;
 use std::fmt::Debug;
 use std::ops::DerefMut;
 use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use tux_lockfree::map::{Map, Removed};
 use tux_lockfree::queue::Queue;
 
 use crate::world::chunk::section::AxolotlChunkSection;
 use crate::world::generator::AxolotlGenerator;
 use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter};
-use crate::world::ChunkUpdate;
+use crate::world::{AxolotlWorld, ChunkUpdate};
 use crate::{AxolotlGame, Error};
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_api::world_gen::noise::ChunkGenerator;
@@ -35,7 +37,7 @@ impl AxolotlChunk {
         let mut sections: [AxolotlChunkSection; (consts::Y_SIZE / consts::SECTION_Y_SIZE)] =
             Default::default();
         for index in consts::MIN_Y_SECTION..consts::MAX_Y_SECTION {
-            let section = &mut sections[index as usize + 4];
+            let section = &mut sections[(index + 4) as usize];
             section.y = index;
         }
         Self {
@@ -52,11 +54,20 @@ impl AxolotlChunk {
         let section = &mut self.sections[id];
         section.blocks.set_block(pos, block);
     }
+    pub fn set_biome(&mut self, mut pos: BlockPosition, biome: OwnedNameSpaceKey) {
+        let id = pos.section();
+        if id >= self.sections.len() {
+            warn!("Tried to set biome out of bounds");
+            return;
+        }
+        let section = &mut self.sections[id];
+        section.biomes.set_biome(pos, biome);
+    }
 }
-impl<'game> IntoRawChunk<'game> for AxolotlChunk {
+impl<'game> IntoRawChunk for AxolotlChunk {
     fn load_from_chunk(
         &mut self,
-        game: &'game AxolotlGame,
+        game: Arc<AxolotlGame>,
         chunk: &mut RawChunk,
         _entities: Option<&mut RawEntities>,
     ) {
@@ -73,7 +84,7 @@ impl<'game> IntoRawChunk<'game> for AxolotlChunk {
                 }
             };
             if let Some(blocks_section) = raw_section.block_states.as_mut() {
-                if let Err(e) = section.blocks.load(game, blocks_section) {
+                if let Err(e) = section.blocks.load(game.as_ref(), blocks_section) {
                     warn!("Failed to load blocks section: {}", e);
                 }
             } else {
@@ -99,6 +110,9 @@ impl<'game> IntoRawChunk<'game> for AxolotlChunk {
             last_update: 0,
             sections,
             lights: vec![],
+            status: "full".to_string(),
+            last_updated: 3912,
+            inhabited_time: 0,
         }
     }
 }
@@ -108,7 +122,7 @@ pub struct ChunkHandle {
     pub loaded: AtomicBool,
 }
 #[derive(Debug)]
-pub struct ChunkMap<'game, V: LevelReader<'game> + LevelWriter<'game> + Debug> {
+pub struct ChunkMap<'game, V: LevelReader + LevelWriter + Debug> {
     pub generator: AxolotlGenerator<'game>,
 
     pub thread_safe_chunks: Map<ChunkPos, ChunkHandle>,
@@ -117,10 +131,19 @@ pub struct ChunkMap<'game, V: LevelReader<'game> + LevelWriter<'game> + Debug> {
     pub queue: Queue<ChunkUpdate>,
     pub accessor: V,
 }
-impl<'game, V: LevelReader<'game> + LevelWriter<'game> + Debug> ChunkMap<'game, V>
+impl<'game, V: LevelReader + LevelWriter + Debug> ChunkMap<'game, V>
 where
-    Error: From<<V as LevelWriter<'game>>::Error> + From<<V as LevelReader<'game>>::Error>,
+    Error: From<<V as LevelWriter>::Error> + From<<V as LevelReader>::Error>,
 {
+    pub fn new(generator: AxolotlGenerator<'game>, accessor: V) -> Self {
+        Self {
+            generator,
+            thread_safe_chunks: Map::new(),
+            dead_chunks: Queue::new(),
+            queue: Queue::new(),
+            accessor,
+        }
+    }
     /// Handles all updates within the queue
     pub fn handle_updates(&self) {
         while let Some(update) = self.queue.pop() {
@@ -173,6 +196,7 @@ where
         update: Option<(BlockPosition, PlacedBlock)>,
     ) -> Result<(), Error> {
         let pos = ChunkPos::new(x, z);
+        info!("Loading chunk at {:?}", pos);
         let chunk = if let Some(dead) = self.dead_chunks.pop() {
             dead
         } else {
@@ -187,8 +211,10 @@ where
 
         let mut chunk = map_guard.val().value.write();
         let chunk_ref = chunk.deref_mut();
+        debug!("Loading chunk at {:?}", pos);
         if !self.accessor.get_chunk_into(&pos, chunk_ref)? {
             chunk_ref.chunk_pos = pos;
+            debug!("Generating chunk at {:?}", pos);
             self.generator.generate_chunk_into(chunk_ref);
         }
 
@@ -196,11 +222,24 @@ where
             chunk_ref.set_block(pos, block);
         }
         drop(chunk);
+        info!("Loaded chunk at {:?}", pos);
         map_guard
             .val()
             .loaded
             .store(true, std::sync::atomic::Ordering::Relaxed);
 
+        Ok(())
+    }
+    pub fn save_all(&self) -> Result<(), Error> {
+        let result: Vec<_> = self.thread_safe_chunks.iter().map(|x| *x.key()).collect();
+        for pos in result {
+            match self.unload_chunk(pos.0, pos.1) {
+                Ok(ok) => {}
+                Err(v) => {
+                    warn!("Error saving chunk: {:?}", v);
+                }
+            }
+        }
         Ok(())
     }
 }

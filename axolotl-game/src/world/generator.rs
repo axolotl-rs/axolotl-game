@@ -20,13 +20,13 @@ use axolotl_api::world_gen::noise::{ChunkGenerator, NameSpaceKeyOrType, Noise, N
 
 use crate::world::chunk::AxolotlChunk;
 use crate::world::level::biome_source::BiomeSourceSettings;
-use crate::world::level::flat::FlatSettings;
+use crate::world::level::flat::{FlatGenerator, FlatSettings};
 use crate::world::level::noise::NoiseGenerator;
 use crate::world::perlin::GameNoise;
 
 #[derive(Debug)]
 pub enum AxolotlGenerator<'game> {
-    Flat(),
+    Flat(FlatGenerator),
     Noise(NoiseGenerator<'game>),
     Debug(),
 }
@@ -37,13 +37,18 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
     type Chunk = AxolotlChunk;
     type GameTy = AxolotlGame;
 
-    fn new(_game: Arc<Self::GameTy>, _chunk_settings: Self::ChunkSettings) -> Self {
-        todo!()
+    fn new(game: Arc<Self::GameTy>, chunk_settings: Self::ChunkSettings) -> Self {
+        match chunk_settings {
+            ChunkSettings::Flat(settings) => {
+                AxolotlGenerator::Flat(FlatGenerator::new(game, settings))
+            }
+            _ => unimplemented!(),
+        }
     }
 
     fn generate_chunk(&self, chunk_x: i32, chunk_z: i32) -> Self::Chunk {
         match self {
-            AxolotlGenerator::Flat() => todo!(),
+            AxolotlGenerator::Flat(v) => v.generate_chunk(chunk_x, chunk_z),
             AxolotlGenerator::Noise(noise) => noise.generate_chunk(chunk_x, chunk_z),
             AxolotlGenerator::Debug() => todo!(),
         }
@@ -51,7 +56,7 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
 
     fn generate_chunk_into(&self, chunk: &mut Self::Chunk) {
         match self {
-            AxolotlGenerator::Flat() => {}
+            AxolotlGenerator::Flat(v) => v.generate_chunk_into(chunk),
             AxolotlGenerator::Noise(noise) => {
                 noise.generate_chunk_into(chunk);
             }
@@ -62,9 +67,7 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
 
 #[derive(Debug)]
 pub enum ChunkSettings {
-    Flat {
-        settings: FlatSettings,
-    },
+    Flat(FlatSettings),
     Noise {
         biome_source: BiomeSourceSettings,
         settings: NameSpaceKeyOrType<NoiseSetting>,
@@ -88,7 +91,7 @@ impl<'de> Visitor<'de> for ChunkSettingsVisitor {
         match value.get_key() {
             "flat" => {
                 let settings: FlatSettings = map.next_value()?;
-                Ok(ChunkSettings::Flat { settings })
+                Ok(ChunkSettings::Flat(settings))
             }
             "noise" => {
                 let biome_source: BiomeSourceSettings = map.next_value()?;

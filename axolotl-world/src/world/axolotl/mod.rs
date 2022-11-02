@@ -9,6 +9,8 @@ use axolotl_types::OwnedNameSpaceKey;
 
 use std::collections::HashMap;
 
+use crate::region::CompressionType::Gzip;
+use flate2::write::GzEncoder;
 use std::path::PathBuf;
 use thiserror::Error;
 use uuid::Uuid;
@@ -66,8 +68,12 @@ impl World for AxolotlWorld {
                 "level.dat already exists",
             )));
         }
-        let mut level_dat_file = std::fs::File::create(level_dat_path)?;
+        let mut level_dat_file = GzEncoder::new(
+            std::fs::File::create(level_dat_path)?,
+            flate2::Compression::default(),
+        );
         serde_impl::to_writer(&mut level_dat_file, &level_dat)?;
+        level_dat_file.finish()?;
         let player_folder = world_folder
             .join(level_dat.axolotl_player_data.as_str())
             .canonicalize()?;
@@ -78,7 +84,7 @@ impl World for AxolotlWorld {
         if !entities_folder.exists() {
             std::fs::create_dir_all(&entities_folder)?;
         }
-        let regions = player_folder.join("regions");
+        let regions = player_folder.join("region");
 
         if !regions.exists() {
             std::fs::create_dir_all(&regions)?;

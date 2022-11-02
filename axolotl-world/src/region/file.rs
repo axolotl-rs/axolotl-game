@@ -45,7 +45,7 @@ impl RegionFile {
                 write_buffer: vec![],
             })
         } else {
-            let mut file = OpenOptions::new().read(true).open(&path)?;
+            let mut file = OpenOptions::new().read(true).write(true).open(&path)?;
             RegionHeader::initialize(&mut file)?;
             let region_header = RegionHeader::default();
             Ok(Self {
