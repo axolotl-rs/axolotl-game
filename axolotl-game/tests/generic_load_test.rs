@@ -37,15 +37,10 @@ pub fn load_game() {
 
     info!("Attempting to create a world at {:?}", world);
 
-    let axolotl_world = AxolotlWorld::create(
+    let world_load = AxolotlWorld::create(
         game.clone(),
         Uuid::new_v4(),
         "world".to_string(),
-        WorldConfig {
-            name: "world".to_string(),
-            path: world.clone(),
-            use_own_resource_pack: false,
-        },
         8,
         8,
         world,
@@ -72,7 +67,9 @@ pub fn load_game() {
         Arc::new(Minecraft19PlayerAccess::new(player)),
         0,
         OwnedNameSpaceKey::new("minecraft".to_string(), "overworld".to_string()),
-    );
+    )
+    .expect("Failed to create world");
+    let axolotl_world = world_load.world;
     for x in 0..=32 {
         for z in 0..=32 {
             axolotl_world.chunk_map.queue.push(ChunkUpdate::Load {

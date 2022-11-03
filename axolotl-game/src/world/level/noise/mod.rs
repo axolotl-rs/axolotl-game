@@ -31,6 +31,11 @@ impl DensityContext for ChunkContext {
     }
 }
 #[derive(Debug)]
+pub struct Settings {
+    pub noise: NoiseSetting,
+    pub biome_source: BiomeSourceSettings,
+}
+#[derive(Debug)]
 pub struct NoiseGenerator<'game> {
     game: Arc<AxolotlGame>,
     phantom: std::marker::PhantomData<&'game ()>,

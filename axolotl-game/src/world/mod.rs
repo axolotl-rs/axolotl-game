@@ -39,7 +39,7 @@ mod resource_pool;
 use crate::world::entity::properties::Location;
 use crate::world::level::accessor::v_19::player::Minecraft19PlayerAccess;
 use crate::world::level::accessor::v_19::Minecraft19WorldAccessor;
-use crate::{AxolotlGame, Sender};
+use crate::{AxolotlGame, Error, Sender};
 
 #[derive(Debug)]
 pub enum ChunkUpdate {
@@ -71,7 +71,7 @@ impl Hash for WorldPlayer {
         self.location.index.hash(state);
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ChunkTickets {
     pub tickets: AHashMap<ChunkPos, AHashSet<Entity>>,
 }
@@ -88,10 +88,39 @@ impl ChunkTickets {
     }
 }
 #[derive(Debug)]
+pub enum ServerUpdateIn {
+    // A player has joined the server
+    NewPlayer {
+        sender: Sender<Arc<PlayerUpdate>>,
+        uuid: Uuid,
+    },
+}
+#[derive(Debug)]
+pub enum ServerUpdateOut {}
+
+#[derive(Debug)]
+pub struct WorldLoad<'game> {
+    pub world: AxolotlWorld<'game>,
+    // Updates from the server to the world
+    pub sender: crate::Sender<ServerUpdateIn>,
+    // Updates from the world to the server
+    pub receiver: crate::Receiver<ServerUpdateOut>,
+}
+
+#[derive(Debug)]
+pub struct InternalWorldRef {
+    // Updates from the server to the world
+    pub sender: crate::Sender<ServerUpdateIn>,
+    // Updates from the world to the server
+    pub receiver: crate::Receiver<ServerUpdateOut>,
+    pub uuid: Uuid,
+    pub name: String,
+}
+
+#[derive(Debug)]
 pub struct AxolotlWorld<'game> {
     pub uuid: Uuid,
     pub name: String,
-    pub world_config: WorldConfig,
     pub clients: AHashMap<Entity, WorldPlayer>,
     pub render_distance: u8,
     pub simulation_distance: u8,
@@ -99,15 +128,48 @@ pub struct AxolotlWorld<'game> {
     pub game_world: ECSWorld,
     pub chunk_map: Arc<ChunkMap<'game, Minecraft19WorldAccessor>>,
     pub chunk_tickets: ChunkTickets,
-    pub new_players: Queue<(Entity, WorldPlayer)>,
+    pub server_update_receiver: crate::Receiver<ServerUpdateIn>,
+    pub server_update_sender: crate::Sender<ServerUpdateOut>,
     pub player_access: Arc<Minecraft19PlayerAccess>,
 }
 impl<'game> AxolotlWorld<'game> {
+    pub fn load(
+        game: Arc<AxolotlGame>,
+        uuid: Uuid,
+        directory: PathBuf,
+        player_access: Arc<Minecraft19PlayerAccess>,
+        generator: ChunkSettings,
+    ) -> Result<WorldLoad<'game>, Error> {
+        let (server_update_sender, server_update_receiver) = flume::unbounded();
+        let (to_sever_update_sender, to_sever_update_receiver) = flume::unbounded();
+
+        let accessor = Minecraft19WorldAccessor::load(game.clone(), directory.clone())?;
+        let generator = AxolotlGenerator::new(game, generator);
+        let world = AxolotlWorld {
+            uuid,
+            name: accessor.world.level_dat.level_name.clone(),
+            clients: Default::default(),
+            render_distance: 8,
+            simulation_distance: 8,
+            entities: vec![],
+            game_world: ECSWorld::new(64),
+            chunk_map: Arc::new(ChunkMap::new(generator, accessor)),
+            chunk_tickets: Default::default(),
+            server_update_receiver,
+            server_update_sender: to_sever_update_sender,
+            player_access,
+        };
+        Ok(WorldLoad {
+            world,
+            sender: server_update_sender,
+            receiver: to_sever_update_receiver,
+        })
+    }
+
     pub fn create(
         game: Arc<AxolotlGame>,
         uuid: Uuid,
         name: String,
-        world_config: WorldConfig,
         render_distance: u8,
         simulation_distance: u8,
         directory: PathBuf,
@@ -115,45 +177,13 @@ impl<'game> AxolotlWorld<'game> {
         player_access: Arc<Minecraft19PlayerAccess>,
         seed: i64,
         dimension: OwnedNameSpaceKey,
-    ) -> Self {
+    ) -> Result<WorldLoad<'game>, Error> {
         let mut dimensions = HashMap::new();
         dimensions.insert(
             dimension.clone(),
             Dimension {
                 world_type: dimension,
-                generator: serde_json::to_value(chunk_generator.clone()).unwrap(),
-                other: HashMap::new(),
-            },
-        );
-        // Coping Mechanism for world readers
-        let the_end = OwnedNameSpaceKey::new("minecraft".to_string(), "the_end".to_string());
-        dimensions.insert(
-            the_end.clone(),
-            Dimension {
-                world_type: the_end,
-                generator: json!( {
-                    "biome_source": {
-                        "type": "minecraft:the_end",
-                    },
-                    "settings": "minecraft:end",
-                    "type": "minecraft:noise",
-                }),
-                other: HashMap::new(),
-            },
-        );
-        let the_nether = OwnedNameSpaceKey::new("minecraft".to_string(), "the_nether".to_string());
-        dimensions.insert(
-            the_nether.clone(),
-            Dimension {
-                world_type: the_nether,
-                generator: json!( {
-                    "biome_source": {
-                        "type": "minecraft:multi_noise",
-                        "preset": "minecraft:nether",
-                    },
-                    "settings": "minecraft:nether",
-                    "type": "minecraft:noise",
-                }),
+                generator: serde_json::to_value(chunk_generator.clone())?,
                 other: HashMap::new(),
             },
         );
@@ -165,10 +195,11 @@ impl<'game> AxolotlWorld<'game> {
             bonus_chest: false,
         };
         let generator = AxolotlGenerator::new(game.clone(), chunk_generator);
-        Self {
+        let (server_update_sender, server_update_receiver) = flume::unbounded();
+        let (to_sever_update_sender, to_sever_update_receiver) = flume::unbounded();
+        let world = Self {
             uuid,
             name: name.clone(),
-            world_config,
             clients: AHashMap::new(),
             render_distance,
             simulation_distance,
@@ -176,38 +207,18 @@ impl<'game> AxolotlWorld<'game> {
             game_world: ECSWorld::new(64),
             chunk_map: Arc::new(ChunkMap::new(
                 generator,
-                Minecraft19WorldAccessor::create(game, settings, directory.clone(), name).unwrap(),
+                Minecraft19WorldAccessor::create(game, settings, directory.clone(), name)?,
             )),
-            chunk_tickets: ChunkTickets {
-                tickets: AHashMap::new(),
-            },
-            new_players: Queue::new(),
+            chunk_tickets: Default::default(),
             player_access,
-        }
-    }
-
-    pub fn load_player(&self, player: Sender<Arc<PlayerUpdate>>, nbt: PlayerData) {
-        let game_player = GamePlayer::from(nbt);
-        let (entity, location) = self
-            .game_world
-            .add_entity(game_player)
-            .expect("Failed to add player entity");
-        self.new_players.push((
-            entity,
-            WorldPlayer {
-                location,
-                sender: player,
-            },
-        ));
-    }
-    /// Location is a specified via a teleport
-    /// If None we will assume it used a portal and will fall back on Game Logic
-    pub fn load_player_from_tp(
-        &self,
-        _player: Sender<Arc<PlayerUpdate>>,
-        _game_player: GamePlayer,
-        _location: Option<Location>,
-    ) {
+            server_update_receiver,
+            server_update_sender: to_sever_update_sender,
+        };
+        Ok(WorldLoad {
+            world,
+            sender: server_update_sender,
+            receiver: to_sever_update_receiver,
+        })
     }
 
     pub(crate) fn send_block_update(&self, pos: BlockPosition, block: usize) {
@@ -264,8 +275,8 @@ impl Hash for AxolotlWorld<'_> {
 
 impl<'game> World for AxolotlWorld<'game> {
     type Chunk = AxolotlChunk;
-    type NoiseGenerator = AxolotlGenerator<'game>;
     type WorldBlock = PlacedBlock;
+    type NoiseGenerator = AxolotlGenerator<'game>;
 
     fn get_name(&self) -> &str {
         &self.name

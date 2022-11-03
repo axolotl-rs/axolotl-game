@@ -1,15 +1,18 @@
 pub mod player;
 
 use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter, RawChunk};
+use crate::world::AxolotlWorld;
+use crate::Error::WorldError;
 use crate::{AxolotlGame, Error};
 use ahash::AHashMap;
 use axolotl_api::world_gen::chunk::ChunkPos;
+use axolotl_nbt::serde_impl;
 use axolotl_world::entity::RawEntities;
 use axolotl_world::level;
 use axolotl_world::level::{DataPacks, LevelDat, MinecraftVersion, WorldGenSettings};
 use axolotl_world::region::file::{RegionFile, RegionFileType};
 use axolotl_world::region::RegionHeader;
-use axolotl_world::world::axolotl::AxolotlWorld as RawWorld;
+use axolotl_world::world::axolotl::{AxolotlWorld as RawWorld, AxolotlWorldError};
 use axolotl_world::world::World;
 use itoa::Buffer;
 use log::{debug, info, warn};
@@ -18,6 +21,7 @@ use parking_lot::{Mutex, RawRwLock, RwLock};
 use serde_json::Value;
 use std::collections::VecDeque;
 use std::fs::OpenOptions;
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU8;
 use std::sync::Arc;
@@ -38,6 +42,25 @@ pub struct Minecraft19WorldAccessor {
 }
 
 impl Minecraft19WorldAccessor {
+    fn new(game: Arc<AxolotlGame>, world: RawWorld) -> Self {
+        Self {
+            active_regions: RwLock::new(AHashMap::with_capacity(MAX_NUMBER_OPEN_REGIONS)),
+            world,
+            dead_chunks: Mutex::new(VecDeque::with_capacity(8)),
+            dead_regions: Mutex::new(VecDeque::with_capacity(8)),
+            game,
+        }
+    }
+    pub fn load(game: Arc<AxolotlGame>, path: PathBuf) -> Result<Self, Error> {
+        let level_dat_file = path.join("level.dat");
+        if !level_dat_file.exists() {
+            return Err(Error::WorldError(axolotl_world::Error::WorldDoesNotExist));
+        }
+        let mut file = std::fs::File::open(level_dat_file).map(BufReader::new)?;
+        let level_dat: LevelDat = serde_impl::from_buf_reader_binary(file)?;
+        let world = RawWorld::load(path, level_dat)?;
+        Ok(Self::new(game, world))
+    }
     pub fn create(
         game: Arc<AxolotlGame>,
         world_gen: impl Into<WorldGenSettings>,
@@ -67,15 +90,8 @@ impl Minecraft19WorldAccessor {
                 data_version: 3120,
                 ..Default::default()
             },
-        )
-        .expect("Failed to create world");
-        Ok(Self {
-            active_regions: RwLock::new(AHashMap::new()),
-            world,
-            dead_chunks: Mutex::new(VecDeque::new()),
-            dead_regions: Mutex::new(VecDeque::new()),
-            game,
-        })
+        )?;
+        Ok(Self::new(game, world))
     }
     pub fn clean(&self) {
         let mut guard = self.dead_regions.lock();

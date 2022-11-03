@@ -1,0 +1,68 @@
+{
+  "groups": [
+    {
+      "name": "vanilla",
+      "worlds": [
+        {
+          "name": "overworld",
+          "path": "overworld",
+          "world_type": "minecraft:overworld",
+          "generator": {
+            "biome_source": {
+              "type": "minecraft:multi_noise",
+              "preset": "minecraft:overworld"
+            },
+            "settings": "minecraft:overworld",
+            "type": "minecraft:noise"
+          }
+        },
+        {
+          "name": "the_end",
+          "path": "the_end",
+          "world_type": "minecraft:the_end",
+          "generator": {
+            "biome_source": {
+              "type": "minecraft:the_end"
+            },
+            "settings": "minecraft:end",
+            "type": "minecraft:noise"
+          }
+        },
+        {
+          "name": "the_nether",
+          "path": "the_nether",
+          "world_type": "minecraft:the_nether",
+          "generator": {
+            "biome_source": {
+              "type": "minecraft:multi_noise",
+              "preset": "minecraft:nether"
+            },
+            "settings": "minecraft:nether",
+            "type": "minecraft:noise"
+          }
+        }
+      ],
+      "nether_portal_rules": [
+        {
+          "from": "vanilla/overworld",
+          "to": "vanilla/the_nether"
+        },
+        {
+          "from": "vanilla/the_nether",
+          "to": "vanilla/overworld"
+        }
+      ],
+      "end_portal_rules": [
+        {
+          "from": "vanilla/overworld",
+          "to": "vanilla/the_end"
+        },
+        {
+          "from": "vanilla/the_end",
+          "to": "vanilla/overworld"
+        }
+      ]
+    }
+  ],
+  "default": "vanilla"
+}

@@ -42,7 +42,7 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
 
     fn new(game: Arc<Self::GameTy>, chunk_settings: Self::ChunkSettings) -> Self {
         match chunk_settings {
-            ChunkSettings::Flat(settings) => {
+            ChunkSettings::Flat { settings } => {
                 AxolotlGenerator::Flat(FlatGenerator::new(game, settings))
             }
             _ => unimplemented!(),
@@ -68,94 +68,18 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum ChunkSettings {
-    Flat(FlatSettings),
+    #[serde(rename = "minecraft:flat")]
+    Flat { settings: FlatSettings },
+    #[serde(rename = "minecraft:noise")]
     Noise {
-        biome_source: BiomeSourceSettings,
         settings: NameSpaceKeyOrType<NoiseSetting>,
+        biome_source: BiomeSourceSettings,
     },
-    Debug(),
-}
-impl Serialize for ChunkSettings {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            ChunkSettings::Flat(settings) => {
-                let mut map = serializer.serialize_map(Some(1))?;
-                map.serialize_entry("type", "minecraft:flat")?;
-                map.serialize_entry("settings", settings)?;
-                map.end()
-            }
-            ChunkSettings::Noise {
-                biome_source,
-                settings,
-            } => {
-                let mut map = serializer.serialize_map(Some(2))?;
-                map.serialize_entry("type", "minecraft:noise")?;
-                map.serialize_entry("biome_source", biome_source)?;
-                map.serialize_entry("settings", settings)?;
-                map.end()
-            }
-            ChunkSettings::Debug() => {
-                let mut map = serializer.serialize_map(Some(1))?;
-                map.serialize_entry("type", "minecraft:debug")?;
-                map.end()
-            }
-        }
-    }
 }
 
-struct ChunkSettingsVisitor;
-
-impl<'de> Visitor<'de> for ChunkSettingsVisitor {
-    type Value = ChunkSettings;
-
-    fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-        formatter.write_str("a map")
-    }
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-    where
-        A: MapAccess<'de>,
-    {
-        let value = get_type!(map);
-        match value.get_key() {
-            "flat" => {
-                let settings: FlatSettings = map.next_value()?;
-                Ok(ChunkSettings::Flat(settings))
-            }
-            "noise" => {
-                let biome_source: BiomeSourceSettings = map.next_value()?;
-                let settings: NameSpaceKeyOrType<NoiseSetting> = map.next_value()?;
-                Ok(ChunkSettings::Noise {
-                    biome_source,
-                    settings,
-                })
-            }
-            "debug" => {
-                // As of now there are no settings for the debug generator
-                Ok(ChunkSettings::Debug())
-            }
-            _ => {
-                return Err(serde::de::Error::custom(format!(
-                    "Expected `type` key to be `flat`, `noise` or `debug`, got `{}`",
-                    value.get_key()
-                )));
-            }
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for ChunkSettings {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_str(ChunkSettingsVisitor)
-    }
-}
 #[derive(Debug)]
 pub struct AxolotlDensityLoader(pub(crate) SimpleRegistry<FunctionArgument>);
 impl DensityLoader for AxolotlDensityLoader {

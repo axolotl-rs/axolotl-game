@@ -35,6 +35,8 @@ pub enum Error {
     #[error(transparent)]
     WorldError(#[from] axolotl_world::Error),
     #[error(transparent)]
+    AxolotlWorldError(#[from] axolotl_world::world::axolotl::AxolotlWorldError),
+    #[error(transparent)]
     NbtError(#[from] axolotl_nbt::NBTError),
     #[error(transparent)]
     SerdeError(#[from] serde_impl::Error),

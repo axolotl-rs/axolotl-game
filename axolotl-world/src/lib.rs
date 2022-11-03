@@ -27,6 +27,8 @@ pub enum Error {
     SerdeNBT(#[from] serde_impl::Error),
     #[error("Invalid chunk header: {0}")]
     InvalidChunkHeader(&'static str),
+    #[error("World does not exist")]
+    WorldDoesNotExist,
 }
 
 impl Error {
