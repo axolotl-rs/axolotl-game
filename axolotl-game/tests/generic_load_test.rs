@@ -1,3 +1,4 @@
+use axolotl_api::OwnedNameSpaceKey;
 use axolotl_game::world::generator::{AxolotlGenerator, ChunkSettings};
 use axolotl_game::world::level::accessor::v_19::player::Minecraft19PlayerAccess;
 use axolotl_game::world::level::configs::WorldConfig;
@@ -69,6 +70,8 @@ pub fn load_game() {
             structure_overrides: vec![],
         }),
         Arc::new(Minecraft19PlayerAccess::new(player)),
+        0,
+        OwnedNameSpaceKey::new("minecraft".to_string(), "overworld".to_string()),
     );
     for x in 0..=32 {
         for z in 0..=32 {

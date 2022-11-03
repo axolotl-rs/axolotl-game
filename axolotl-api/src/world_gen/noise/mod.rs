@@ -22,6 +22,17 @@ pub enum NameSpaceKeyOrType<T> {
     NameSpaceKey(OwnedNameSpaceKey),
     Type(T),
 }
+impl<T: Serialize> Serialize for NameSpaceKeyOrType<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            NameSpaceKeyOrType::NameSpaceKey(key) => key.serialize(serializer),
+            NameSpaceKeyOrType::Type(key) => key.serialize(serializer),
+        }
+    }
+}
 
 struct NameSpaceKeyOrTypeVisitor<T>(std::marker::PhantomData<T>);
 

@@ -9,6 +9,7 @@ license = "Apache-2.0"
 [dependencies]
 serde_derive = { version = "1.0", features = ["deserialize_in_place"] }
 serde = { version = "1.0" }
+serde_json = "1"
 axolotl-nbt = { git = "https://github.com/axolotl-rs/axolotl-nbt.git", features = ["value", "serde"] }
 flate2 = { version = "1" }
 thiserror = "1"

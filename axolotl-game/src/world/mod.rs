@@ -1,6 +1,8 @@
 use ahash::{AHashMap, AHashSet};
+use axolotl_nbt::value::Value;
 use dumbledore::entities::entity::{Entity, EntityLocation};
 use log::{debug, warn};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
@@ -19,10 +21,13 @@ use crate::world::entity::MinecraftEntity;
 use crate::world::generator::{AxolotlGenerator, ChunkSettings};
 use crate::world::level::configs::WorldConfig;
 use axolotl_api::world_gen::noise::ChunkGenerator;
+use axolotl_api::OwnedNameSpaceKey;
 use axolotl_world::entity::player::PlayerData;
+use axolotl_world::level::{Dimension, WorldGenSettings};
 use chunk::placed_block::PlacedBlock;
 use dumbledore::world::World as ECSWorld;
 use entity::player::PlayerUpdate;
+use serde_json::json;
 
 pub mod chunk;
 pub mod entity;
@@ -108,10 +113,61 @@ impl<'game> AxolotlWorld<'game> {
         directory: PathBuf,
         chunk_generator: ChunkSettings,
         player_access: Arc<Minecraft19PlayerAccess>,
+        seed: i64,
+        dimension: OwnedNameSpaceKey,
     ) -> Self {
+        let mut dimensions = HashMap::new();
+        dimensions.insert(
+            dimension.clone(),
+            Dimension {
+                world_type: dimension,
+                generator: serde_json::to_value(chunk_generator.clone()).unwrap(),
+                other: HashMap::new(),
+            },
+        );
+        // Coping Mechanism for world readers
+        let the_end = OwnedNameSpaceKey::new("minecraft".to_string(), "the_end".to_string());
+        dimensions.insert(
+            the_end.clone(),
+            Dimension {
+                world_type: the_end,
+                generator: json!( {
+                    "biome_source": {
+                        "type": "minecraft:the_end",
+                    },
+                    "settings": "minecraft:end",
+                    "type": "minecraft:noise",
+                }),
+                other: HashMap::new(),
+            },
+        );
+        let the_nether = OwnedNameSpaceKey::new("minecraft".to_string(), "the_nether".to_string());
+        dimensions.insert(
+            the_nether.clone(),
+            Dimension {
+                world_type: the_nether,
+                generator: json!( {
+                    "biome_source": {
+                        "type": "minecraft:multi_noise",
+                        "preset": "minecraft:nether",
+                    },
+                    "settings": "minecraft:nether",
+                    "type": "minecraft:noise",
+                }),
+                other: HashMap::new(),
+            },
+        );
+
+        let settings = WorldGenSettings {
+            seed,
+            dimensions,
+            generate_features: false,
+            bonus_chest: false,
+        };
+        let generator = AxolotlGenerator::new(game.clone(), chunk_generator);
         Self {
             uuid,
-            name,
+            name: name.clone(),
             world_config,
             clients: AHashMap::new(),
             render_distance,
@@ -119,8 +175,8 @@ impl<'game> AxolotlWorld<'game> {
             entities: Vec::new(),
             game_world: ECSWorld::new(64),
             chunk_map: Arc::new(ChunkMap::new(
-                AxolotlGenerator::new(game.clone(), chunk_generator),
-                Minecraft19WorldAccessor::create(game, directory.clone()).unwrap(),
+                generator,
+                Minecraft19WorldAccessor::create(game, settings, directory.clone(), name).unwrap(),
             )),
             chunk_tickets: ChunkTickets {
                 tickets: AHashMap::new(),

@@ -2,7 +2,8 @@ use crate::get_type;
 use axolotl_api::world_gen::noise::BiomeSource;
 use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
 use serde::de::{MapAccess, Visitor};
-use serde::{Deserialize, Deserializer};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::fmt::Formatter;
 
@@ -20,14 +21,37 @@ impl BiomeSource for AxolotlBiomeSource {
         todo!()
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BiomeSourceSettings {
     MultiNoise {},
     TheEnd {},
     Fixed { biome: OwnedNameSpaceKey },
     Checkerboard {},
 }
-
+impl Serialize for BiomeSourceSettings {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(None)?;
+        match self {
+            BiomeSourceSettings::MultiNoise {} => {
+                map.serialize_entry("type", "minecraft:multi_noise")?;
+            }
+            BiomeSourceSettings::TheEnd {} => {
+                map.serialize_entry("type", "minecraft:the_end")?;
+            }
+            BiomeSourceSettings::Fixed { biome } => {
+                map.serialize_entry("type", "minecraft:fixed")?;
+                map.serialize_entry("biome", biome)?;
+            }
+            BiomeSourceSettings::Checkerboard {} => {
+                map.serialize_entry("type", "minecraft:checkerboard")?;
+            }
+        }
+        map.end()
+    }
+}
 struct BiomeSourceSettingsVisitor;
 
 impl<'de> Visitor<'de> for BiomeSourceSettingsVisitor {

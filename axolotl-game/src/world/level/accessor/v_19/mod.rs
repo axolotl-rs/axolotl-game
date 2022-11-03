@@ -5,15 +5,17 @@ use crate::{AxolotlGame, Error};
 use ahash::AHashMap;
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_world::entity::RawEntities;
+use axolotl_world::level;
+use axolotl_world::level::{DataPacks, LevelDat, MinecraftVersion, WorldGenSettings};
 use axolotl_world::region::file::{RegionFile, RegionFileType};
 use axolotl_world::region::RegionHeader;
-use axolotl_world::world::axolotl::level_dat::AxolotlLevelDat;
 use axolotl_world::world::axolotl::AxolotlWorld as RawWorld;
 use axolotl_world::world::World;
 use itoa::Buffer;
 use log::{debug, info, warn};
 use parking_lot::lock_api::{RawMutex, RwLockWriteGuard};
 use parking_lot::{Mutex, RawRwLock, RwLock};
+use serde_json::Value;
 use std::collections::VecDeque;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
@@ -36,9 +38,37 @@ pub struct Minecraft19WorldAccessor {
 }
 
 impl Minecraft19WorldAccessor {
-    pub fn create(game: Arc<AxolotlGame>, path: PathBuf) -> Result<Self, Error> {
-        let world =
-            RawWorld::create(path, AxolotlLevelDat::default()).expect("Failed to create world");
+    pub fn create(
+        game: Arc<AxolotlGame>,
+        world_gen: impl Into<WorldGenSettings>,
+        path: PathBuf,
+        name: String,
+    ) -> Result<Self, Error> {
+        let world = RawWorld::create(
+            path,
+            LevelDat {
+                version: MinecraftVersion {
+                    name: "1.19.2".to_string(),
+                    id: 3120,
+                    snapshot: false,
+                    series: "main".to_string(),
+                },
+                data_packs: DataPacks {
+                    disabled: vec![],
+                    enabled: vec!["vanilla".to_string()],
+                },
+                game_rules: level::default_game_rules(),
+                world_gen_settings: world_gen.into(),
+                initialized: true,
+                was_modded: true,
+                server_brands: vec!["Axolotl".to_string()],
+                level_name: name,
+                version_num: 19133,
+                data_version: 3120,
+                ..Default::default()
+            },
+        )
+        .expect("Failed to create world");
         Ok(Self {
             active_regions: RwLock::new(AHashMap::new()),
             world,

@@ -1,3 +1,4 @@
+use axolotl_nbt::value::Value;
 use axolotl_noise::minecraft::random::xoroshiro::MinecraftXoroshiro128;
 use log::warn;
 use std::collections::HashMap;
@@ -9,7 +10,8 @@ use axolotl_api::game::{Game, Registry};
 
 use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
 use serde::de::{MapAccess, Visitor};
-use serde::{Deserialize, Deserializer};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::registry::SimpleRegistry;
 use crate::{get_type, AxolotlGame};
@@ -17,6 +19,7 @@ use axolotl_api::world_gen::noise::density::loading::{DensityLoader, FunctionArg
 use axolotl_api::world_gen::noise::density::perlin::Perlin;
 use axolotl_api::world_gen::noise::density::{DensityState, Function};
 use axolotl_api::world_gen::noise::{ChunkGenerator, NameSpaceKeyOrType, Noise, NoiseSetting};
+use axolotl_world::level::WorldGenSettings;
 
 use crate::world::chunk::AxolotlChunk;
 use crate::world::level::biome_source::BiomeSourceSettings;
@@ -65,7 +68,7 @@ impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ChunkSettings {
     Flat(FlatSettings),
     Noise {
@@ -73,6 +76,36 @@ pub enum ChunkSettings {
         settings: NameSpaceKeyOrType<NoiseSetting>,
     },
     Debug(),
+}
+impl Serialize for ChunkSettings {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            ChunkSettings::Flat(settings) => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("type", "minecraft:flat")?;
+                map.serialize_entry("settings", settings)?;
+                map.end()
+            }
+            ChunkSettings::Noise {
+                biome_source,
+                settings,
+            } => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("type", "minecraft:noise")?;
+                map.serialize_entry("biome_source", biome_source)?;
+                map.serialize_entry("settings", settings)?;
+                map.end()
+            }
+            ChunkSettings::Debug() => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("type", "minecraft:debug")?;
+                map.end()
+            }
+        }
+    }
 }
 
 struct ChunkSettingsVisitor;
