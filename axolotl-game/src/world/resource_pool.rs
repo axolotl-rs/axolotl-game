@@ -12,21 +12,20 @@ pub trait WorldResourcePool {
     fn world_group(&self) -> &WorldGrouping;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SharedWorldResourcePool {
     pub player_access: Arc<Minecraft19PlayerAccess>,
-    pub world_group: Arc<WorldGrouping>,
-    pub worlds: Vec<Arc<RwLock<AxolotlWorld>>>,
+    pub worlds: Vec<AxolotlWorld>,
     pub chunk_maps: Vec<Arc<ChunkMap<Minecraft19WorldAccessor>>>,
     pub running: Arc<AtomicBool>,
 }
 
 impl SharedWorldResourcePool {
-    pub fn tick(&self) {
+    pub fn tick(mut self) {
         // TODO add timing
         while self.running.load(Ordering::Relaxed) {
-            for world in &self.worlds {
-                world.write().tick();
+            for world in self.worlds.iter_mut() {
+                world.tick();
             }
         }
     }
@@ -60,4 +59,7 @@ impl OwnedWorldResourcePool {
 pub enum GenericWorldResourcePool {
     Shared(SharedWorldResourcePool),
     Owned(OwnedWorldResourcePool),
+}
+impl GenericWorldResourcePool {
+    pub fn run(mut self) {}
 }

@@ -22,6 +22,8 @@ axolotl-data-rs={git="https://github.com/axolotl-rs/axolotl-data-rs.git"}
 dashmap = "5.4"
 parking_lot = "0.12"
 flume = { version = "0.10", features = ["async"] }
+flate2 = { version = "1" }
+
 itoa = "1"
 ahash = "0.8"
 dumbledore = { git = "https://github.com/wyatt-herkamp/Dumbledore.git", features = ["dumbledore-macro"] }

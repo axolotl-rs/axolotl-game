@@ -113,7 +113,6 @@ pub struct InternalWorldRef {
     pub sender: crate::Sender<ServerUpdateIn>,
     // Updates from the world to the server
     pub receiver: crate::Receiver<ServerUpdateOut>,
-    pub name: String,
 }
 
 #[derive(Debug)]

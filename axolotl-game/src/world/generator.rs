@@ -45,6 +45,10 @@ impl ChunkGenerator for AxolotlGenerator {
             ChunkSettings::Flat { settings } => {
                 AxolotlGenerator::Flat(FlatGenerator::new(game, settings))
             }
+            ChunkSettings::Noise {
+                settings,
+                biome_source,
+            } => AxolotlGenerator::Noise(NoiseGenerator::new(game, (biome_source, settings))),
             _ => unimplemented!(),
         }
     }

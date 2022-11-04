@@ -9,11 +9,12 @@ use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_nbt::serde_impl;
 use axolotl_world::entity::RawEntities;
 use axolotl_world::level;
-use axolotl_world::level::{DataPacks, LevelDat, MinecraftVersion, WorldGenSettings};
+use axolotl_world::level::{DataPacks, LevelDat, MinecraftVersion, RootWrapper, WorldGenSettings};
 use axolotl_world::region::file::{RegionFile, RegionFileType};
 use axolotl_world::region::RegionHeader;
 use axolotl_world::world::axolotl::{AxolotlWorld as RawWorld, AxolotlWorldError};
 use axolotl_world::world::World;
+use flate2::read::GzDecoder;
 use itoa::Buffer;
 use log::{debug, info, warn};
 use parking_lot::lock_api::{RawMutex, RwLockWriteGuard};
@@ -56,9 +57,10 @@ impl Minecraft19WorldAccessor {
         if !level_dat_file.exists() {
             return Err(Error::WorldError(axolotl_world::Error::WorldDoesNotExist));
         }
-        let mut file = std::fs::File::open(level_dat_file).map(BufReader::new)?;
-        let level_dat: LevelDat = serde_impl::from_buf_reader_binary(file)?;
-        let world = RawWorld::load(path, level_dat)?;
+        let mut file =
+            std::fs::File::open(level_dat_file).map(|r| BufReader::new(GzDecoder::new(r)))?;
+        let level_dat: RootWrapper = serde_impl::from_buf_reader_binary(file)?;
+        let world = RawWorld::load(path, level_dat.data)?;
         Ok(Self::new(game, world))
     }
     pub fn create(
