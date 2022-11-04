@@ -113,13 +113,12 @@ pub struct InternalWorldRef {
     pub sender: crate::Sender<ServerUpdateIn>,
     // Updates from the world to the server
     pub receiver: crate::Receiver<ServerUpdateOut>,
-    pub uuid: Uuid,
     pub name: String,
 }
 
 #[derive(Debug)]
 pub struct AxolotlWorld {
-    pub uuid: Uuid,
+    pub full_name: String,
     pub name: String,
     pub clients: AHashMap<Entity, WorldPlayer>,
     pub render_distance: u8,
@@ -134,8 +133,8 @@ pub struct AxolotlWorld {
 }
 impl AxolotlWorld {
     pub fn load(
+        group: impl AsRef<str>,
         game: Arc<AxolotlGame>,
-        uuid: Uuid,
         directory: PathBuf,
         player_access: Arc<Minecraft19PlayerAccess>,
         generator: ChunkSettings,
@@ -145,9 +144,10 @@ impl AxolotlWorld {
 
         let accessor = Minecraft19WorldAccessor::load(game.clone(), directory.clone())?;
         let generator = AxolotlGenerator::new(game, generator);
+        let name = accessor.world.level_dat.level_name.clone();
         let world = AxolotlWorld {
-            uuid,
-            name: accessor.world.level_dat.level_name.clone(),
+            full_name: format!("{}/{}", group.as_ref(), name),
+            name,
             clients: Default::default(),
             render_distance: 8,
             simulation_distance: 8,
@@ -168,7 +168,8 @@ impl AxolotlWorld {
 
     pub fn create(
         game: Arc<AxolotlGame>,
-        uuid: Uuid,
+        group: impl AsRef<str>,
+
         name: String,
         render_distance: u8,
         simulation_distance: u8,
@@ -198,7 +199,7 @@ impl AxolotlWorld {
         let (server_update_sender, server_update_receiver) = flume::unbounded();
         let (to_sever_update_sender, to_sever_update_receiver) = flume::unbounded();
         let world = Self {
-            uuid,
+            full_name: format!("{}/{}", group.as_ref(), name),
             name: name.clone(),
             clients: AHashMap::new(),
             render_distance,
@@ -269,7 +270,7 @@ impl AxolotlWorld {
 }
 impl Hash for AxolotlWorld {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.uuid.hash(state);
+        self.full_name.hash(state);
     }
 }
 
@@ -280,10 +281,6 @@ impl World for AxolotlWorld {
 
     fn get_name(&self) -> &str {
         &self.name
-    }
-
-    fn uuid(&self) -> &uuid::Uuid {
-        &self.uuid
     }
 
     fn tick(&mut self) {}

@@ -80,8 +80,6 @@ pub trait World: Send + Sync + Hash + Debug {
     type NoiseGenerator: crate::world_gen::noise::ChunkGenerator<Chunk = Self::Chunk>;
     fn get_name(&self) -> &str;
 
-    fn uuid(&self) -> &Uuid;
-
     fn tick(&mut self);
 
     fn generator(&self) -> &Self::NoiseGenerator;
