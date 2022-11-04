@@ -191,7 +191,7 @@ impl Debug for AxolotlGame {
     }
 }
 impl Game for AxolotlGame {
-    type World = AxolotlWorld<'static>;
+    type World = AxolotlWorld;
     type Biome = DataPackBiome;
     type Block = MinecraftBlock<Self>;
     type Item = MinecraftItem<Self>;

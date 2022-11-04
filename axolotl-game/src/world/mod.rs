@@ -99,8 +99,8 @@ pub enum ServerUpdateIn {
 pub enum ServerUpdateOut {}
 
 #[derive(Debug)]
-pub struct WorldLoad<'game> {
-    pub world: AxolotlWorld<'game>,
+pub struct WorldLoad {
+    pub world: AxolotlWorld,
     // Updates from the server to the world
     pub sender: crate::Sender<ServerUpdateIn>,
     // Updates from the world to the server
@@ -118,7 +118,7 @@ pub struct InternalWorldRef {
 }
 
 #[derive(Debug)]
-pub struct AxolotlWorld<'game> {
+pub struct AxolotlWorld {
     pub uuid: Uuid,
     pub name: String,
     pub clients: AHashMap<Entity, WorldPlayer>,
@@ -126,20 +126,20 @@ pub struct AxolotlWorld<'game> {
     pub simulation_distance: u8,
     pub entities: Vec<MinecraftEntity>,
     pub game_world: ECSWorld,
-    pub chunk_map: Arc<ChunkMap<'game, Minecraft19WorldAccessor>>,
+    pub chunk_map: Arc<ChunkMap<Minecraft19WorldAccessor>>,
     pub chunk_tickets: ChunkTickets,
     pub server_update_receiver: crate::Receiver<ServerUpdateIn>,
     pub server_update_sender: crate::Sender<ServerUpdateOut>,
     pub player_access: Arc<Minecraft19PlayerAccess>,
 }
-impl<'game> AxolotlWorld<'game> {
+impl AxolotlWorld {
     pub fn load(
         game: Arc<AxolotlGame>,
         uuid: Uuid,
         directory: PathBuf,
         player_access: Arc<Minecraft19PlayerAccess>,
         generator: ChunkSettings,
-    ) -> Result<WorldLoad<'game>, Error> {
+    ) -> Result<WorldLoad, Error> {
         let (server_update_sender, server_update_receiver) = flume::unbounded();
         let (to_sever_update_sender, to_sever_update_receiver) = flume::unbounded();
 
@@ -177,7 +177,7 @@ impl<'game> AxolotlWorld<'game> {
         player_access: Arc<Minecraft19PlayerAccess>,
         seed: i64,
         dimension: OwnedNameSpaceKey,
-    ) -> Result<WorldLoad<'game>, Error> {
+    ) -> Result<WorldLoad, Error> {
         let mut dimensions = HashMap::new();
         dimensions.insert(
             dimension.clone(),
@@ -267,16 +267,16 @@ impl<'game> AxolotlWorld<'game> {
     }
     pub fn tick_entities(&mut self) {}
 }
-impl Hash for AxolotlWorld<'_> {
+impl Hash for AxolotlWorld {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.uuid.hash(state);
     }
 }
 
-impl<'game> World for AxolotlWorld<'game> {
+impl World for AxolotlWorld {
     type Chunk = AxolotlChunk;
     type WorldBlock = PlacedBlock;
-    type NoiseGenerator = AxolotlGenerator<'game>;
+    type NoiseGenerator = AxolotlGenerator;
 
     fn get_name(&self) -> &str {
         &self.name

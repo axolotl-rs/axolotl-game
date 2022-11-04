@@ -122,8 +122,8 @@ pub struct ChunkHandle {
     pub loaded: AtomicBool,
 }
 #[derive(Debug)]
-pub struct ChunkMap<'game, V: LevelReader + LevelWriter + Debug> {
-    pub generator: AxolotlGenerator<'game>,
+pub struct ChunkMap<V: LevelReader + LevelWriter + Debug> {
+    pub generator: AxolotlGenerator,
 
     pub thread_safe_chunks: Map<ChunkPos, ChunkHandle>,
     pub dead_chunks: Queue<AxolotlChunk>,
@@ -131,11 +131,11 @@ pub struct ChunkMap<'game, V: LevelReader + LevelWriter + Debug> {
     pub queue: Queue<ChunkUpdate>,
     pub accessor: V,
 }
-impl<'game, V: LevelReader + LevelWriter + Debug> ChunkMap<'game, V>
+impl<V: LevelReader + LevelWriter + Debug> ChunkMap<V>
 where
     Error: From<<V as LevelWriter>::Error> + From<<V as LevelReader>::Error>,
 {
-    pub fn new(generator: AxolotlGenerator<'game>, accessor: V) -> Self {
+    pub fn new(generator: AxolotlGenerator, accessor: V) -> Self {
         Self {
             generator,
             thread_safe_chunks: Map::new(),

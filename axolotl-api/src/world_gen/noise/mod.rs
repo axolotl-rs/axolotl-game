@@ -120,7 +120,7 @@ pub struct NoiseSetting {
 ///- Will be implemented in game impl
 ///
 /// Example Imples will be minecraft:noise, minecraft:flat,minecraft:debug,
-pub trait ChunkGenerator<'game> {
+pub trait ChunkGenerator {
     type PerlinNoise: Perlin;
     type ChunkSettings: for<'a> Deserialize<'a>;
     type Chunk;

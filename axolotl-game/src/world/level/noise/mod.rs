@@ -36,14 +36,13 @@ pub struct Settings {
     pub biome_source: BiomeSourceSettings,
 }
 #[derive(Debug)]
-pub struct NoiseGenerator<'game> {
+pub struct NoiseGenerator {
     game: Arc<AxolotlGame>,
-    phantom: std::marker::PhantomData<&'game ()>,
     noise: NoiseSetting,
     biome_source: BiomeSourceSettings,
 }
 
-impl<'game> ChunkGenerator<'game> for NoiseGenerator<'game> {
+impl ChunkGenerator for NoiseGenerator {
     type PerlinNoise = GameNoise;
     type ChunkSettings = (BiomeSourceSettings, NameSpaceKeyOrType<NoiseSetting>);
     type Chunk = AxolotlChunk;
@@ -63,7 +62,6 @@ impl<'game> ChunkGenerator<'game> for NoiseGenerator<'game> {
 
         Self {
             game,
-            phantom: Default::default(),
             noise: settings,
             biome_source,
         }

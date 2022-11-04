@@ -38,7 +38,7 @@ pub struct FlatGenerator {
     pub game: Arc<AxolotlGame>,
 }
 
-impl ChunkGenerator<'_> for FlatGenerator {
+impl ChunkGenerator for FlatGenerator {
     type PerlinNoise = GameNoise;
     type ChunkSettings = FlatSettings;
     type Chunk = AxolotlChunk;

@@ -13,15 +13,15 @@ pub trait WorldResourcePool {
 }
 
 #[derive(Debug, Clone)]
-pub struct SharedWorldResourcePool<'game> {
+pub struct SharedWorldResourcePool {
     pub player_access: Arc<Minecraft19PlayerAccess>,
     pub world_group: Arc<WorldGrouping>,
-    pub worlds: Vec<Arc<RwLock<AxolotlWorld<'game>>>>,
-    pub chunk_maps: Vec<Arc<ChunkMap<'game, Minecraft19WorldAccessor>>>,
+    pub worlds: Vec<Arc<RwLock<AxolotlWorld>>>,
+    pub chunk_maps: Vec<Arc<ChunkMap<Minecraft19WorldAccessor>>>,
     pub running: Arc<AtomicBool>,
 }
 
-impl SharedWorldResourcePool<'_> {
+impl SharedWorldResourcePool {
     pub fn tick(&self) {
         // TODO add timing
         while self.running.load(Ordering::Relaxed) {
@@ -38,14 +38,14 @@ impl SharedWorldResourcePool<'_> {
 }
 
 #[derive(Debug, Clone)]
-pub struct OwnedWorldResourcePool<'game> {
+pub struct OwnedWorldResourcePool {
     pub world_group: WorldGrouping,
-    pub world: Arc<RwLock<AxolotlWorld<'game>>>,
-    pub chunk_map: Arc<ChunkMap<'game, Minecraft19WorldAccessor>>,
+    pub world: Arc<RwLock<AxolotlWorld>>,
+    pub chunk_map: Arc<ChunkMap<Minecraft19WorldAccessor>>,
     pub running: Arc<AtomicBool>,
 }
 
-impl OwnedWorldResourcePool<'_> {
+impl OwnedWorldResourcePool {
     pub fn tick(&self) {
         // TODO add timing
         while self.running.load(Ordering::Relaxed) {
@@ -57,7 +57,7 @@ impl OwnedWorldResourcePool<'_> {
     }
 }
 
-pub enum GenericWorldResourcePool<'game> {
-    Shared(SharedWorldResourcePool<'game>),
-    Owned(OwnedWorldResourcePool<'game>),
+pub enum GenericWorldResourcePool {
+    Shared(SharedWorldResourcePool),
+    Owned(OwnedWorldResourcePool),
 }

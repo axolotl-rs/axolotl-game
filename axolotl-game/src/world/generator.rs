@@ -28,13 +28,13 @@ use crate::world::level::noise::NoiseGenerator;
 use crate::world::perlin::GameNoise;
 
 #[derive(Debug)]
-pub enum AxolotlGenerator<'game> {
+pub enum AxolotlGenerator {
     Flat(FlatGenerator),
-    Noise(NoiseGenerator<'game>),
+    Noise(NoiseGenerator),
     Debug(),
 }
 
-impl<'game> ChunkGenerator<'_> for AxolotlGenerator<'game> {
+impl ChunkGenerator for AxolotlGenerator {
     type PerlinNoise = GameNoise;
     type ChunkSettings = ChunkSettings;
     type Chunk = AxolotlChunk;
