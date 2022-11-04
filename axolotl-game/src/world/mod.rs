@@ -34,7 +34,7 @@ pub mod entity;
 pub mod generator;
 pub mod level;
 pub mod perlin;
-mod resource_pool;
+pub mod resource_pool;
 
 use crate::world::entity::properties::Location;
 use crate::world::level::accessor::v_19::player::Minecraft19PlayerAccess;
