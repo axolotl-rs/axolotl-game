@@ -217,6 +217,7 @@ impl AxolotlWorld {
         let (server_update_sender, server_update_receiver) = flume::unbounded();
         let (to_sever_update_sender, to_sever_update_receiver) = flume::unbounded();
         let mut hasher = DefaultHasher::new();
+        group.as_ref().hash(&mut hasher);
         name.hash(&mut hasher);
         let name_hash = hasher.finish();
         let world = Self {

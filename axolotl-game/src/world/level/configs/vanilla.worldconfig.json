@@ -64,5 +64,5 @@
       ]
     }
   ],
-  "default": "vanilla"
+  "default": "vanilla/overworld"
 }

@@ -8,17 +8,28 @@ use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
 use uuid::Uuid;
+/// This is the default config for worlds. This is to make a vanilla like feel to the game.
 pub static DEFAULT_VANILLA_CONFIG: &str = include_str!("vanilla.worldconfig.json");
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorldsConfig {
     pub groups: Vec<WorldGrouping>,
     /// If undefined a plugin will have to handle this
-    pub default: Option<String>,
+    pub default: Option<WorldLocationID>,
 }
-#[derive(Debug, Clone)]
+/// A WorldLocationID. This will Deserialize from either a string or a map
+///
+/// # Examples
+/// {"group": "vanilla", "world": "overworld"}
+/// "vanilla/overworld"
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct WorldLocationID {
     pub group: String,
     pub world: String,
+}
+impl WorldLocationID {
+    pub fn new(group: String, world: String) -> Self {
+        Self { group, world }
+    }
 }
 impl FromStr for WorldLocationID {
     type Err = String;
