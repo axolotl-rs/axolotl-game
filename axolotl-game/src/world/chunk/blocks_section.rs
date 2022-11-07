@@ -63,8 +63,7 @@ impl PartialEq for AxolotlBlockSection {
         discriminant(self) == discriminant(other)
     }
 }
-impl<'game, Pos: Into<SectionPosIndex>, Block: Into<PlacedBlock>, Iter> From<Iter>
-    for AxolotlBlockSection
+impl<Pos: Into<SectionPosIndex>, Block: Into<PlacedBlock>, Iter> From<Iter> for AxolotlBlockSection
 where
     Iter: IntoIterator<Item = (Pos, Block)>,
 {

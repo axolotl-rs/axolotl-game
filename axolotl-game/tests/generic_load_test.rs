@@ -1,22 +1,22 @@
 use axolotl_api::OwnedNameSpaceKey;
-use axolotl_game::world::generator::{AxolotlGenerator, ChunkSettings};
+use axolotl_game::world::generator::ChunkSettings;
 use axolotl_game::world::level::accessor::v_19::player::Minecraft19PlayerAccess;
-use axolotl_game::world::level::configs::WorldConfig;
 use axolotl_game::world::level::flat::{FlatSettings, Layer};
 use axolotl_game::world::{AxolotlWorld, ChunkUpdate};
-use axolotl_game::{AxolotlGame, GameConfig};
-use log::info;
+use axolotl_game::GameConfig;
+use log::{error, info};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use uuid::Uuid;
 
 #[test]
 pub fn load_game() {
     simple_log::quick!();
+    let data_dump = option_env!("DATA_DUMP").unwrap_or("data_dump");
+    let axolotl_data = option_env!("AXOLOTL_DATA").unwrap_or("axolotl_data");
     let config = GameConfig {
-        data_dump: PathBuf::from(env!("DATA_DUMP")),
+        data_dump: PathBuf::from(data_dump),
         data_packs: vec![],
-        axolotl_data: PathBuf::from(env!("AXOLOTL_DATA")),
+        axolotl_data: PathBuf::from(axolotl_data),
     };
     let game = axolotl_game::AxolotlGame::load(config)
         .map(Arc::new)
@@ -38,8 +38,8 @@ pub fn load_game() {
     info!("Attempting to create a world at {:?}", world);
 
     let world_load = AxolotlWorld::create(
-        game.clone(),
-        Uuid::new_v4(),
+        game,
+        "test",
         "world".to_string(),
         8,
         8,
@@ -85,7 +85,9 @@ pub fn load_game() {
     axolotl_world.chunk_map.handle_updates();
     info!("Done Creating Chunks");
     info!("Saving Chunks");
-    axolotl_world.chunk_map.save_all();
+    if let Err(e) = axolotl_world.chunk_map.save_all() {
+        error!("Failed to save chunks: {}", e);
+    };
     info!("Done Saving Chunks");
     axolotl_world.chunk_map.accessor.force_close_all();
 }

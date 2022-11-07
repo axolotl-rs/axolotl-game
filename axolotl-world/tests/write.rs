@@ -32,9 +32,11 @@ pub fn test() {
         write_buffer: vec![],
     };
     region.write_chunk(RawChunk::default()).unwrap();
-    let mut chunk = RawChunk::default();
-    chunk.x_pos = 1;
-    chunk.z_pos = 1;
+    let chunk = RawChunk {
+        x_pos: 1,
+        z_pos: 1,
+        ..RawChunk::default()
+    };
     region.write_chunk(chunk).unwrap();
     region.save().unwrap();
 

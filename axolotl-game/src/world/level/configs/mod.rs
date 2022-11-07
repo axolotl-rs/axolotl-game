@@ -66,8 +66,8 @@ impl<'de> serde::de::Visitor<'de> for WorldLocationIDVisitor {
             }
         }
         Ok(WorldLocationID {
-            group: group.ok_or(serde::de::Error::custom("Missing `group` key"))?,
-            world: world.ok_or(serde::de::Error::custom("Missing `world` key"))?,
+            group: group.ok_or_else(|| serde::de::Error::custom("Missing `group` key"))?,
+            world: world.ok_or_else(|| serde::de::Error::custom("Missing `world` key"))?,
         })
     }
 }

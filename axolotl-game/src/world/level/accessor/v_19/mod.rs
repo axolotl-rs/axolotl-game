@@ -33,9 +33,10 @@ pub struct ActiveRegion {
     pub chunks: RegionFile,
     pub entities: RegionFile,
 }
+type RegionRef = Arc<Mutex<ActiveRegion>>;
 #[derive(Debug)]
 pub struct Minecraft19WorldAccessor {
-    pub active_regions: RwLock<AHashMap<(i32, i32), Arc<Mutex<ActiveRegion>>>>,
+    pub active_regions: RwLock<AHashMap<(i32, i32), RegionRef>>,
     pub world: RawWorld,
     pub dead_chunks: Mutex<VecDeque<RawChunk>>,
     pub dead_regions: Mutex<VecDeque<(RegionHeader, Vec<u8>)>>,
@@ -226,7 +227,7 @@ impl Minecraft19WorldAccessor {
     /// Attempts to clean up regions by closing ones without active references
     fn attempt_region_clean(
         &self,
-        guard: &mut RwLockWriteGuard<RawRwLock, AHashMap<(i32, i32), Arc<Mutex<ActiveRegion>>>>,
+        guard: &mut RwLockWriteGuard<RawRwLock, AHashMap<(i32, i32), RegionRef>>,
     ) {
         let len = MAX_NUMBER_OPEN_REGIONS / 2;
         let mut vec = Vec::with_capacity(len);

@@ -64,7 +64,7 @@ impl AxolotlChunk {
         section.biomes.set_biome(pos, biome);
     }
 }
-impl<'game> IntoRawChunk for AxolotlChunk {
+impl IntoRawChunk for AxolotlChunk {
     fn load_from_chunk(
         &mut self,
         game: Arc<AxolotlGame>,

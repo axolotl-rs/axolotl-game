@@ -188,7 +188,6 @@ impl AxolotlWorld {
     pub fn create(
         game: Arc<AxolotlGame>,
         group: impl AsRef<str>,
-
         name: String,
         render_distance: u8,
         simulation_distance: u8,

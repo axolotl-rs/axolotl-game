@@ -1,4 +1,5 @@
-#![allow(unused)]
+#![allow(unused, clippy::from_over_into)]
+
 extern crate core;
 
 pub mod chat;

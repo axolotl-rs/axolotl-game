@@ -69,8 +69,8 @@ impl<T: DeserializeOwned> SimpleRegistry<T> {
             let entry = entry?;
             let path = entry.path();
             let name = path.file_name().and_then(|s| s.to_str()).map(|s| {
-                if s.ends_with(".json") {
-                    s[..s.len() - 5].to_string()
+                if let Some(s) = s.strip_suffix(".json") {
+                    s.to_string()
                 } else {
                     s.to_string()
                 }
@@ -124,8 +124,8 @@ impl<T: DeserializeOwned> SimpleRegistry<T> {
                 }
             } else {
                 let name = path.file_name().and_then(|s| s.to_str()).and_then(|s| {
-                    if s.ends_with(".json") {
-                        Some(&s[..s.len() - 5])
+                    if let Some(s) = s.strip_suffix(".json") {
+                        Some(s)
                     } else {
                         warn!("Non json file {:?}", path);
                         None

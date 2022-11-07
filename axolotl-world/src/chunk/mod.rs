@@ -57,9 +57,9 @@ impl Serialize for PaletteItem {
         S: Serializer,
     {
         let mut str = serializer.serialize_struct("PaletteItem", 2)?;
-        str.serialize_field("Name", &self.name);
+        str.serialize_field("Name", &self.name)?;
         if !self.properties.is_empty() {
-            str.serialize_field("Properties", &self.properties);
+            str.serialize_field("Properties", &self.properties)?;
         }
         str.end()
     }
@@ -108,7 +108,7 @@ impl<'de> Visitor<'de> for PaletteVisitor {
             wrapped_key = map.next_key::<String>()?;
         }
         Ok(PaletteItem {
-            name: name.ok_or(Error::missing_field("Name"))?,
+            name: name.ok_or_else(|| Error::missing_field("Name"))?,
             properties,
         })
     }
