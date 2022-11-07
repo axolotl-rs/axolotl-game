@@ -110,7 +110,7 @@ impl RegionFile {
         drop(file);
 
         // Update the region header
-        let location = &mut self.region_header.locations[index as usize];
+        let location = &mut self.region_header.locations[index];
         location.0 = (i / 4096) as u32;
         location.1 = sector_count as u8;
         Ok(())
@@ -168,7 +168,7 @@ impl RegionFile {
             // TODO: Compact the file
 
             // Update the region header
-            let location = &mut self.region_header.locations[index as usize];
+            let location = &mut self.region_header.locations[index];
             location.0 = (i / 4096) as u32;
             location.1 = sector_count as u8;
         }
@@ -183,7 +183,7 @@ impl RegionFile {
             return Ok(ChunkHeader::default());
         }
         let calc_offset = location.calc_offset();
-        file.seek(SeekFrom::Start(calc_offset as u64))?;
+        file.seek(SeekFrom::Start(calc_offset))?;
 
         Self::read_chunk_header_from_file(&mut file)
     }
@@ -206,7 +206,7 @@ impl RegionFile {
         }
         let mut file = OpenOptions::new().read(true).open(&self.file)?;
         let calc_offset = location.calc_offset();
-        file.seek(SeekFrom::Start(calc_offset as u64))?;
+        file.seek(SeekFrom::Start(calc_offset))?;
 
         let header = Self::read_chunk_header_from_file(&mut file)?;
         println!("Reading chunk at {:?}", location);
@@ -240,7 +240,7 @@ impl RegionFile {
         }
         let mut file = OpenOptions::new().read(true).open(&self.file)?;
         let calc_offset = location.calc_offset();
-        file.seek(SeekFrom::Start(calc_offset as u64))?;
+        file.seek(SeekFrom::Start(calc_offset))?;
 
         let header = Self::read_chunk_header_from_file(&mut file)?;
 

@@ -7,9 +7,39 @@ pub mod registry;
 pub mod world;
 
 pub use flume::{bounded, unbounded, Receiver, Sender};
+use std::collections::VecDeque;
 
 pub struct ChunkPosSplit(i32, i32);
+/// Remove if https://github.com/zesterer/flume/issues/113 is fixed
+pub struct FlumeHack<T> {
+    pub queue: VecDeque<T>,
+}
+impl<T> FlumeHack<T> {
+    pub fn from(drain: Drain<'_, T>) -> FlumeHack<T> {
+        let value: FlumeHack<T> = unsafe { mem::transmute::<Drain<'_, T>, FlumeHack<T>>(drain) };
+        value
+    }
+}
+#[cfg(test)]
+mod test {
+    use flume::unbounded;
 
+    #[test]
+    pub fn test() {
+        let (sender, receiver) = unbounded();
+        sender.send(1).unwrap();
+        sender.send(2).unwrap();
+        sender.send(3).unwrap();
+        sender.send(4).unwrap();
+        sender.send(5).unwrap();
+        let drain = receiver.drain();
+        let hack = super::FlumeHack::from(drain);
+
+        let vec = hack.queue.into_iter().collect::<Vec<_>>();
+        assert_eq!(vec, vec![1, 2, 3, 4, 5]);
+        println!("{:?}", vec);
+    }
+}
 #[test]
 pub fn test_build() {}
 macro_rules! get_type {
@@ -55,9 +85,11 @@ use axolotl_api::world_gen::noise::{Noise, NoiseSetting};
 use axolotl_api::NamespacedKey;
 
 use axolotl_nbt::serde_impl;
+use flume::Drain;
 pub(crate) use get_type;
 use log::{debug, info};
 use std::fmt::{Debug, Formatter};
+use std::mem;
 use std::path::PathBuf;
 
 use crate::chat::AxolotlChatType;

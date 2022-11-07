@@ -165,7 +165,7 @@ impl<'de> Visitor<'de> for FunctionArgumentVisitor {
     where
         E: Error,
     {
-        if let Ok(key) = OwnedNameSpaceKey::from_str(&v) {
+        if let Ok(key) = OwnedNameSpaceKey::from_str(v) {
             Ok(FunctionArgument::NamespaceKey(key))
         } else {
             Ok(FunctionArgument::String(v.to_string()))
@@ -209,7 +209,7 @@ impl<'de> Visitor<'de> for FunctionArgumentVisitor {
             }
         }
 
-        return Err(serde::de::Error::custom("Invalid function argument"));
+        Err(serde::de::Error::custom("Invalid function argument"))
     }
 }
 

@@ -103,7 +103,7 @@ impl World for AxolotlWorld {
             std::fs::create_dir_all(&regions)?;
         }
 
-        Ok(Self::load(world_folder, level_dat)?)
+        Self::load(world_folder, level_dat)
     }
 
     fn get_dimensions(&self) -> &HashMap<OwnedNameSpaceKey, PathBuf> {
@@ -113,7 +113,7 @@ impl World for AxolotlWorld {
     fn get_player_file(&self, uuid: impl Into<Uuid>) -> Result<PlayerData, Self::Error> {
         let player_file = self
             .player_folder
-            .join(format!("{}.dat", uuid.into().hyphenated().to_string()));
+            .join(format!("{}.dat", uuid.into().hyphenated()));
         let file = std::fs::File::open(player_file)?;
         let reader = std::io::BufReader::new(file);
 

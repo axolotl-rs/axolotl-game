@@ -77,7 +77,7 @@ impl<'de> Visitor<'de> for PaletteVisitor {
     where
         E: Error,
     {
-        Ok(PaletteItem::from_str(v).map_err(Error::custom)?)
+        PaletteItem::from_str(v).map_err(Error::custom)
     }
     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
     where

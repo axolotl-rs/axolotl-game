@@ -33,7 +33,7 @@ impl<G: Game> EventHandler<ItemLeftClick<G>> for BlockItem<G> {
         &self,
         _event: ItemLeftClick<G>,
     ) -> Result<<ItemLeftClick<G> as Event>::Result, <ItemLeftClick<G> as Event>::Error> {
-        return Ok(());
+        Ok(())
     }
 }
 

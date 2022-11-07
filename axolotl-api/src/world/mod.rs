@@ -38,8 +38,8 @@ impl BlockPosition {
         self.z *= 16;
     }
     pub fn make_relative_ref(&mut self) {
-        self.x = self.x % 16;
-        self.z = self.z % 16;
+        self.x %= 16;
+        self.z %= 16;
     }
     #[inline(always)]
     pub fn section(&mut self) -> usize {

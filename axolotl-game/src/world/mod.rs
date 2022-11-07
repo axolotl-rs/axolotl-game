@@ -1,9 +1,9 @@
 use ahash::{AHashMap, AHashSet};
 use axolotl_nbt::value::Value;
-use dumbledore::entities::entity::{Entity, EntityLocation};
 use log::{debug, warn};
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -25,8 +25,8 @@ use axolotl_api::OwnedNameSpaceKey;
 use axolotl_world::entity::player::PlayerData;
 use axolotl_world::level::{Dimension, WorldGenSettings};
 use chunk::placed_block::PlacedBlock;
-use dumbledore::world::World as ECSWorld;
 use entity::player::PlayerUpdate;
+use hecs::{Entity, World as ECSWorld};
 use serde_json::json;
 
 pub mod chunk;
@@ -39,7 +39,7 @@ pub mod resource_pool;
 use crate::world::entity::properties::Location;
 use crate::world::level::accessor::v_19::player::Minecraft19PlayerAccess;
 use crate::world::level::accessor::v_19::Minecraft19WorldAccessor;
-use crate::{AxolotlGame, Error, Sender};
+use crate::{AxolotlGame, Error, FlumeHack, Sender};
 
 #[derive(Debug)]
 pub enum ChunkUpdate {
@@ -63,19 +63,31 @@ impl ChunkUpdate {
 }
 #[derive(Debug)]
 pub struct WorldPlayer {
-    pub location: EntityLocation,
+    pub entity: Entity,
+    pub uuid: Uuid,
     pub sender: Sender<Arc<PlayerUpdate>>,
 }
+impl PartialEq for WorldPlayer {
+    fn eq(&self, other: &Self) -> bool {
+        self.uuid == other.uuid && self.entity == other.entity
+    }
+}
+impl Eq for WorldPlayer {}
 impl Hash for WorldPlayer {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.location.index.hash(state);
+        self.uuid.hash(state);
     }
 }
 #[derive(Debug, Clone, Default)]
 pub struct ChunkTickets {
-    pub tickets: AHashMap<ChunkPos, AHashSet<Entity>>,
+    pub tickets: AHashMap<ChunkPos, AHashSet<Arc<WorldPlayer>>>,
 }
 impl ChunkTickets {
+    pub fn remove_player(&mut self, player: &Arc<WorldPlayer>) {
+        for (_, players) in self.tickets.iter_mut() {
+            players.remove(player);
+        }
+    }
     pub fn find_chunks_to_unload<UC>(&mut self, unload_chunk: UC)
     where
         UC: Fn(ChunkPos),
@@ -93,6 +105,12 @@ pub enum ServerUpdateIn {
     NewPlayer {
         sender: Sender<Arc<PlayerUpdate>>,
         uuid: Uuid,
+    },
+    PlayerLeft(Uuid),
+    // To unload the chunk of entities
+    UnloadChunk {
+        x: i32,
+        z: i32,
     },
 }
 #[derive(Debug)]
@@ -115,14 +133,13 @@ pub struct InternalWorldRef {
     pub receiver: crate::Receiver<ServerUpdateOut>,
 }
 
-#[derive(Debug)]
 pub struct AxolotlWorld {
     pub full_name: String,
     pub name: String,
-    pub clients: AHashMap<Entity, WorldPlayer>,
+    pub name_hash: u64,
+    pub clients: Vec<Arc<WorldPlayer>>,
     pub render_distance: u8,
     pub simulation_distance: u8,
-    pub entities: Vec<MinecraftEntity>,
     pub game_world: ECSWorld,
     pub chunk_map: Arc<ChunkMap<Minecraft19WorldAccessor>>,
     pub chunk_tickets: ChunkTickets,
@@ -141,17 +158,20 @@ impl AxolotlWorld {
         let (server_update_sender, server_update_receiver) = flume::unbounded();
         let (to_sever_update_sender, to_sever_update_receiver) = flume::unbounded();
 
-        let accessor = Minecraft19WorldAccessor::load(game.clone(), directory.clone())?;
+        let accessor = Minecraft19WorldAccessor::load(game.clone(), directory)?;
         let generator = AxolotlGenerator::new(game, generator);
         let name = accessor.world.level_dat.level_name.clone();
+        let mut hasher = DefaultHasher::new();
+        name.hash(&mut hasher);
+        let name_hash = hasher.finish();
         let world = AxolotlWorld {
             full_name: format!("{}/{}", group.as_ref(), name),
             name,
+            name_hash,
             clients: Default::default(),
             render_distance: 8,
             simulation_distance: 8,
-            entities: vec![],
-            game_world: ECSWorld::new(64),
+            game_world: ECSWorld::new(),
             chunk_map: Arc::new(ChunkMap::new(generator, accessor)),
             chunk_tickets: Default::default(),
             server_update_receiver,
@@ -197,17 +217,20 @@ impl AxolotlWorld {
         let generator = AxolotlGenerator::new(game.clone(), chunk_generator);
         let (server_update_sender, server_update_receiver) = flume::unbounded();
         let (to_sever_update_sender, to_sever_update_receiver) = flume::unbounded();
+        let mut hasher = DefaultHasher::new();
+        name.hash(&mut hasher);
+        let name_hash = hasher.finish();
         let world = Self {
             full_name: format!("{}/{}", group.as_ref(), name),
             name: name.clone(),
-            clients: AHashMap::new(),
+            name_hash,
+            clients: Default::default(),
             render_distance,
             simulation_distance,
-            entities: Vec::new(),
-            game_world: ECSWorld::new(64),
+            game_world: ECSWorld::new(),
             chunk_map: Arc::new(ChunkMap::new(
                 generator,
-                Minecraft19WorldAccessor::create(game, settings, directory.clone(), name)?,
+                Minecraft19WorldAccessor::create(game, settings, directory, name)?,
             )),
             chunk_tickets: Default::default(),
             player_access,
@@ -256,23 +279,103 @@ impl AxolotlWorld {
     pub fn push_update_to_players_at(&self, chunk: ChunkPos, update: Arc<PlayerUpdate>) {
         if let Some(entities) = self.chunk_tickets.tickets.get(&chunk) {
             for player in entities {
-                if let Some(player) = self.clients.get(player) {
-                    if let Err(error) = player.sender.send(update.clone()) {
-                        warn!("Failed to send chunk update to player: {}", error);
-                    }
+                if let Err(error) = player.sender.send(update.clone()) {
+                    warn!("Failed to send chunk update to player: {}", error);
                 }
-                // In theory this could happen if a player is being removed as we are iterating over the tracked chunks
             }
         }
     }
     pub fn tick_entities(&mut self) {}
+    fn handle_updates(&mut self) {
+        let hack = FlumeHack::from(self.server_update_receiver.drain());
+        for update in hack.queue {
+            self.handle_update(update);
+        }
+    }
+    fn handle_update(&mut self, update: ServerUpdateIn) {
+        match update {
+            ServerUpdateIn::NewPlayer { sender, uuid } => {
+                let player = self.player_access.get_player(uuid, self.name_hash);
+                let player = match player {
+                    Ok(ok) => match ok {
+                        None => {
+                            warn!("Attempted to join world while in another world");
+                            return;
+                        }
+                        Some(ok) => ok,
+                    },
+                    Err(err) => {
+                        warn!("Failed to get player: {}", err);
+                        sender.send(Arc::new(PlayerUpdate::FailedToLoadPlayer));
+                        return;
+                    }
+                };
+                let game_player = GamePlayer::from(player);
+                let entity = self.game_world.spawn(game_player);
+                let player = WorldPlayer {
+                    entity,
+                    sender,
+                    uuid,
+                };
+                self.clients.push(Arc::new(player));
+            }
+            ServerUpdateIn::PlayerLeft(uuid) => {
+                let option = self.clients.iter().position(|client| client.uuid == uuid);
+                if let Some(entity) = option {
+                    let player = self.clients.remove(entity);
+                    self.chunk_tickets.remove_player(&player);
+                    // We should be able to unwrap here because we should have the only reference to the entity
+                    let player = match Arc::try_unwrap(player) {
+                        Ok(ok) => ok,
+                        Err(err) => {
+                            warn!("Player Reference is still alive");
+                            // TODO: Handle this better
+                            return;
+                        }
+                    };
+                    let entity = self.game_world.remove::<GamePlayer>(player.entity).unwrap();
+                    self.game_world.despawn(player.entity);
+                    let data: PlayerData = entity.into();
+                    self.player_access.save_player(uuid, &data);
+                } else {
+                    warn!("Player left but was not found in world");
+                }
+            }
+            ServerUpdateIn::UnloadChunk { x, z } => {
+                let mut entities_to_remove = Vec::new();
+                self.game_world
+                    .query::<(&MinecraftEntity, &Location)>()
+                    .iter()
+                    .for_each(|(entity, (_, location))| {
+                        let chunk_x = location.x as i32 / 16;
+                        let chunk_z = location.z as i32 / 16;
+                        if chunk_x == x && chunk_z == z {
+                            entities_to_remove.push(entity);
+                        }
+                    });
+            }
+        }
+    }
 }
 impl Hash for AxolotlWorld {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.full_name.hash(state);
     }
 }
-
+impl Debug for AxolotlWorld {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AxolotlWorld")
+            .field("name", &self.name)
+            .field("full_name", &self.full_name)
+            .field("clients", &self.clients)
+            .field("render_distance", &self.render_distance)
+            .field("simulation_distance", &self.simulation_distance)
+            .field("chunk_map", &self.chunk_map)
+            .field("chunk_tickets", &self.chunk_tickets)
+            .field("player_access", &self.player_access)
+            .finish()
+    }
+}
 impl World for AxolotlWorld {
     type Chunk = AxolotlChunk;
     type WorldBlock = PlacedBlock;
@@ -282,7 +385,10 @@ impl World for AxolotlWorld {
         &self.name
     }
 
-    fn tick(&mut self) {}
+    fn tick(&mut self) {
+        self.handle_updates();
+        // TODO: Do Game Tick including: entities, liquids, etc
+    }
 
     fn generator(&self) -> &Self::NoiseGenerator {
         &self.chunk_map.generator
@@ -294,7 +400,7 @@ impl World for AxolotlWorld {
         block: PlacedBlock,
         required_loaded: bool,
     ) -> bool {
-        let mut relative_pos = location.clone();
+        let mut relative_pos = location;
         let position = (relative_pos).chunk();
         let id = block.id();
 
@@ -328,7 +434,7 @@ impl World for AxolotlWorld {
             let mut block_len = Vec::with_capacity(blocks.size_hint().0);
             let mut guard = value.val().value.write();
             for (pos, block) in blocks {
-                block_len.push((pos.clone(), block.id()));
+                block_len.push((pos, block.id()));
                 guard.set_block(pos, block);
             }
             drop(guard);

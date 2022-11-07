@@ -144,7 +144,10 @@ where
             accessor,
         }
     }
+
     /// Handles all updates within the queue
+
+    #[deny(clippy::panic)]
     pub fn handle_updates(&self) {
         while let Some(update) = self.queue.pop() {
             if let Err(error) = self.handle_update(update) {
@@ -180,7 +183,7 @@ where
                         .loaded
                         .store(false, std::sync::atomic::Ordering::Relaxed);
                     // Take a current snapshot of the chunk and save it. This is a bit of a hack
-                    (e.key().clone(), (*value.value.read()).clone())
+                    (*e.key(), (*value.value.read()).clone())
                 }
             };
             self.accessor.save_chunk(pos, chunk)?;

@@ -77,8 +77,6 @@ pub fn get_world_type_and_level_dat(
         WorldStyle::Bukkit
     } else if level_dat.other.contains_key("Axolotl.Version") {
         WorldStyle::Axolotl
-    } else if !level_dat.was_modded {
-        WorldStyle::Vanilla
     } else {
         // TODO check for other world layouts
         WorldStyle::Vanilla

@@ -41,10 +41,10 @@ impl<T: Into<u64>> From<(T, T, T)> for SectionPosIndex {
         Self((y.into() << 8) | (z.into() << 4) | x.into())
     }
 }
-impl<T: From<u64>> Into<(T, T, T)> for SectionPosIndex {
+impl<T: From<u64>> From<SectionPosIndex> for (T, T, T) {
     #[inline(always)]
-    fn into(self) -> (T, T, T) {
-        let value = self.0;
+    fn from(val: SectionPosIndex) -> Self {
+        let value = val.0;
         let x = value & 0xF;
         let z = (value >> 4) & 0xF;
         let y = (value >> 8) & 0xF;
@@ -53,9 +53,9 @@ impl<T: From<u64>> Into<(T, T, T)> for SectionPosIndex {
 }
 impl From<BlockPosition> for SectionPosIndex {
     fn from(pos: BlockPosition) -> Self {
-        let x = ((pos.x.abs() as usize) % SECTION_X_SIZE) as u64;
-        let y = ((pos.y.abs() as usize) % SECTION_Y_SIZE) as u64;
-        let z = ((pos.z.abs() as usize) % SECTION_Z_SIZE) as u64;
+        let x = ((pos.x.unsigned_abs() as usize) % SECTION_X_SIZE) as u64;
+        let y = ((pos.y.unsigned_abs() as usize) % SECTION_Y_SIZE) as u64;
+        let z = ((pos.z.unsigned_abs() as usize) % SECTION_Z_SIZE) as u64;
         SectionPosIndex::from((x, y, z))
     }
 }
@@ -76,12 +76,12 @@ pub struct AxolotlChunkSection {
     pub biomes: AxolotlBiomeSection,
     pub y: i8,
 }
-impl Into<ChunkSection> for AxolotlChunkSection {
-    fn into(self) -> ChunkSection {
+impl From<AxolotlChunkSection> for ChunkSection {
+    fn from(val: AxolotlChunkSection) -> Self {
         ChunkSection {
-            y_pos: self.y,
+            y_pos: val.y,
             biomes: None, // TODO: Implement biomes
-            block_states: Some(self.blocks.into()),
+            block_states: Some(val.blocks.into()),
         }
     }
 }

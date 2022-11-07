@@ -29,9 +29,9 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> SplineFunction<'funct
     /// TODO add documentation
     fn calculate_min_max(
         function: &Function<'function, P>,
-        locations: &Vec<f64>,
-        values: &Vec<SplineOrConstant<SplineFunction<'function, P>>>,
-        derivatives: &Vec<f64>,
+        locations: &[f64],
+        values: &[SplineOrConstant<SplineFunction<'function, P>>],
+        derivatives: &[f64],
     ) -> (f64, f64) {
         let mut min = f64::INFINITY;
         let mut max = f64::NEG_INFINITY;
@@ -40,16 +40,16 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> SplineFunction<'funct
         if function_min < locations[0] {
             let val_one = linear_extend(
                 function_min,
-                &locations,
+                locations,
                 values.first().unwrap().min(),
-                &derivatives,
+                derivatives,
                 0,
             );
             let value_two = linear_extend(
                 function_min,
-                &locations,
+                locations,
                 values.first().unwrap().max(),
-                &derivatives,
+                derivatives,
                 0,
             );
             min = min.min(val_one).min(value_two);
@@ -57,9 +57,8 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> SplineFunction<'funct
         }
         let i = locations.len() - 1;
         if function_max > locations[i] {
-            let val_one = linear_extend(function_max, &locations, values[i].min(), &derivatives, i);
-            let value_two =
-                linear_extend(function_max, &locations, values[i].max(), &derivatives, i);
+            let val_one = linear_extend(function_max, locations, values[i].min(), derivatives, i);
+            let value_two = linear_extend(function_max, locations, values[i].max(), derivatives, i);
             min = min.min(val_one).min(value_two);
             max = max.max(val_one).max(value_two);
         }
@@ -160,7 +159,7 @@ impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> DensityFunction<'func
                 ..
             } => {
                 let input = function.compute(state);
-                let i = math::binary_search(&locations, |v| input < *v);
+                let i = math::binary_search(locations, |v| input < *v);
                 if i == 0 {
                     return linear_extend(
                         input,

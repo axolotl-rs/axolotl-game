@@ -153,8 +153,8 @@ impl From<(Vec<f64>, i32)> for Noise {
         }
     }
 }
-impl Into<(Vec<f64>, i32)> for Noise {
-    fn into(self) -> (Vec<f64>, i32) {
-        (self.amplitudes, self.first_octave.unwrap_or_default())
+impl From<Noise> for (Vec<f64>, i32) {
+    fn from(val: Noise) -> Self {
+        (val.amplitudes, val.first_octave.unwrap_or_default())
     }
 }

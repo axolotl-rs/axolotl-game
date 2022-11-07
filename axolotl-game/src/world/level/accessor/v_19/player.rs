@@ -9,8 +9,8 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct Minecraft19PlayerAccess {
-    // Key is Player UUID and Value is the world that "owns" the player
-    pub loaded_players: RwLock<AHashMap<Uuid, Uuid>>,
+    // Key is Player UUID and Value is a hash of the world's name
+    pub loaded_players: RwLock<AHashMap<Uuid, u64>>,
     pub player_folder: PathBuf,
 }
 impl Minecraft19PlayerAccess {
@@ -33,7 +33,7 @@ impl Minecraft19PlayerAccess {
     pub fn get_player(
         &self,
         uuid: Uuid,
-        source_world: Uuid,
+        source_world: u64,
     ) -> Result<Option<PlayerData>, crate::Error> {
         let loaded_players = self.loaded_players.read();
         if loaded_players.contains_key(&uuid) {

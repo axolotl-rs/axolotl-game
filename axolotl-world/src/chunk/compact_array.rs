@@ -1,5 +1,3 @@
-use log::debug;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompactArray {
     pub bits_per_block: usize,
@@ -8,9 +6,9 @@ pub struct CompactArray {
     pub values_per_u64: usize,
     pub mask: u64,
 }
-impl Into<Vec<u64>> for CompactArray {
-    fn into(self) -> Vec<u64> {
-        self.data
+impl From<CompactArray> for Vec<u64> {
+    fn from(val: CompactArray) -> Self {
+        val.data
     }
 }
 impl CompactArray {
@@ -18,14 +16,14 @@ impl CompactArray {
         let values_per_u64 = Self::calc_values_per_u64(bits_per_block);
 
         let data = vec![0; length / values_per_u64];
-        let array = CompactArray {
+
+        CompactArray {
             bits_per_block,
             data,
             length,
             values_per_u64,
             mask: Self::calc_mask(bits_per_block),
-        };
-        array
+        }
     }
     pub fn replace_inner(&mut self, data: Vec<u64>) {
         self.data = data;
@@ -54,7 +52,7 @@ impl CompactArray {
             return None;
         }
         let (index, offset) = self.index_bit_value(index);
-        Some((self.data[index] >> offset) & self.mask as u64)
+        Some((self.data[index] >> offset) & self.mask)
     }
     pub fn set(&mut self, index: impl CompactArrayIndex, value: u64) {
         let index = index.get();
@@ -73,7 +71,7 @@ impl CompactArray {
     }
 
     pub fn iter_vec(
-        data: &Vec<u64>,
+        data: &[u64],
         values_per_u64: usize,
         bits_per_block: usize,
         mask: u64,
@@ -82,7 +80,7 @@ impl CompactArray {
             .flat_map(move |x| (0..values_per_u64).map(move |i| (x >> (i * bits_per_block)) & mask))
     }
     pub fn iter_vec_with_location(
-        data: &Vec<u64>,
+        data: &[u64],
         values_per_u64: usize,
         bits_per_block: usize,
         mask: u64,
@@ -92,13 +90,13 @@ impl CompactArray {
             (0..values_per_u64).map(move |i| {
                 let value = (x >> (i * bits_per_block)) & mask;
                 let location = ((index_location + i) / bits_per_block) as u64;
-                return (value, location);
+                (value, location)
             })
         })
     }
     #[inline]
     fn index_bit_value(&self, index: usize) -> (usize, usize) {
-        let list_index = (index / self.values_per_u64) as usize;
+        let list_index = index / self.values_per_u64;
 
         let bit_offset = (index % self.values_per_u64) * self.bits_per_block;
         (list_index, bit_offset)

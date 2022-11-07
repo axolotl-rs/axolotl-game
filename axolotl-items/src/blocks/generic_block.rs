@@ -148,7 +148,7 @@ impl GenericBlock {
                 .get(&raw_block.properties.material)
                 .expect("Material not found")
                 .clone(),
-            id: raw_block.id as usize,
+            id: raw_block.id,
             key: raw_block.name,
             states,
             default_state,

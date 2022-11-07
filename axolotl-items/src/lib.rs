@@ -70,7 +70,7 @@ pub fn load_blocks<G: Game>(
             let tag = &block.tags[0];
             match tag.name.as_str() {
                 "BedBlock" => {
-                    let block = BedBlock::new(block, &materials, &mut states);
+                    let block = BedBlock::new(block, materials, &mut states);
                     register.register_with_id(
                         &format!("minecraft:{}", block.key),
                         block.id(),
@@ -96,7 +96,7 @@ pub fn load_blocks<G: Game>(
             }
         }
         // Default to generic block
-        let block = GenericBlock::new(block, &materials, &mut states);
+        let block = GenericBlock::new(block, materials, &mut states);
         register.register_with_id(
             &format!("minecraft:{}", block.0.key),
             block.id(),

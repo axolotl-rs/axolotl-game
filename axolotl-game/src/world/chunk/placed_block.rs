@@ -10,13 +10,13 @@ pub struct PlacedBlock {
     pub state: VanillaStateIdOrValue,
     pub block: MinecraftBlock<AxolotlGame>,
 }
-impl Into<PaletteItem> for PlacedBlock {
-    fn into(self) -> PaletteItem {
+impl From<PlacedBlock> for PaletteItem {
+    fn from(val: PlacedBlock) -> Self {
         // TODO convert to palette item properly
         PaletteItem {
             name: OwnedNameSpaceKey::new(
-                self.block.namespace().to_string(),
-                self.block.key().to_string(),
+                val.block.namespace().to_string(),
+                val.block.key().to_string(),
             ),
             properties: Default::default(),
         }

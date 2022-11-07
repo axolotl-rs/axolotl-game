@@ -19,15 +19,8 @@ impl<Src: Debug> RegionWriter<Src> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd, Copy)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd, Copy, Default)]
 pub struct RegionLocation(pub u32, pub u8);
-
-impl Default for RegionLocation {
-    #[inline]
-    fn default() -> Self {
-        Self(0, 0)
-    }
-}
 
 impl RegionLocation {
     #[inline]
@@ -36,9 +29,9 @@ impl RegionLocation {
     }
 }
 
-impl Into<(u32, u8)> for RegionLocation {
-    fn into(self) -> (u32, u8) {
-        (self.0, self.1)
+impl From<RegionLocation> for (u32, u8) {
+    fn from(val: RegionLocation) -> Self {
+        (val.0, val.1)
     }
 }
 
@@ -148,7 +141,7 @@ impl RegionHeader {
     #[inline(always)]
     pub fn get_index(v: impl Into<(i32, i32)>) -> i32 {
         let (x, z) = v.into();
-        ((x % 32) + (z % 32) * 32)
+        (x % 32) + (z % 32) * 32
     }
     pub fn get_chunk_location(&self, v: impl Into<(i32, i32)>) -> Option<&RegionLocation> {
         self.locations.get(Self::get_index(v) as usize)

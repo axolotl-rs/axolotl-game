@@ -41,7 +41,7 @@ impl<T: ForPacket> SimpleRegistry<T> {
             .key_map
             .iter()
             .map(|(key, id)| {
-                let mut v = key.splitn(2, ":");
+                let mut v = key.splitn(2, ':');
                 let id = *id;
                 self.values[id].as_packet_version(
                     id,
@@ -52,7 +52,7 @@ impl<T: ForPacket> SimpleRegistry<T> {
                 )
             })
             .collect();
-        values.sort_by(|a, b| a.id().cmp(&b.id()));
+        values.sort_by(|a, b| a.id().cmp(b.id()));
         values
     }
 }
@@ -68,11 +68,11 @@ impl<T: DeserializeOwned> SimpleRegistry<T> {
         for entry in std::fs::read_dir(path)? {
             let entry = entry?;
             let path = entry.path();
-            let name = path.file_name().and_then(|s| s.to_str()).and_then(|s| {
+            let name = path.file_name().and_then(|s| s.to_str()).map(|s| {
                 if s.ends_with(".json") {
-                    Some(s[..s.len() - 5].to_string())
+                    s[..s.len() - 5].to_string()
                 } else {
-                    Some(s.to_string())
+                    s.to_string()
                 }
             });
 
@@ -155,7 +155,7 @@ impl<T> Registry<T> for SimpleRegistry<T> {
         let namespace = namespace.into();
         let id = self.next_id;
         self.next_id += 1;
-        self.key_map.insert(namespace.into(), id);
+        self.key_map.insert(namespace, id);
         self.values.push(item);
         id
     }

@@ -18,7 +18,7 @@ tux_lockfree = { git = "https://github.com/wyatt-herkamp/tux_lockfree.git" }
 axolotl-noise = { git = "https://github.com/axolotl-rs/axolotl-noise.git", features = ["minecraft"] }
 axolotl-world = { path = "../axolotl-world" }
 axolotl-items = { path = "../axolotl-items" }
-axolotl-data-rs={git="https://github.com/axolotl-rs/axolotl-data-rs.git"}
+axolotl-data-rs = { git = "https://github.com/axolotl-rs/axolotl-data-rs.git" }
 dashmap = "5.4"
 parking_lot = "0.12"
 flume = { version = "0.10", features = ["async"] }
@@ -26,7 +26,8 @@ flate2 = { version = "1" }
 
 itoa = "1"
 ahash = "0.8"
-dumbledore = { git = "https://github.com/wyatt-herkamp/Dumbledore.git", features = ["dumbledore-macro"] }
+hecs = { version = "0.9.0", features = ["macros"] }
+
 tokio = { version = "1", features = ["full"] }
 bytemuck = { version = "1.12", features = ["derive"] }
 axolotl-nbt = { git = "https://github.com/axolotl-rs/axolotl-nbt.git", features = ["value", "serde"] }

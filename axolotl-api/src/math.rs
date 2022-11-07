@@ -23,7 +23,7 @@ pub fn lerp(a: f64, b: f64, t: f64) -> f64 {
     a + t * (b - a)
 }
 #[inline]
-pub fn linear_extend(f: f64, fs: &Vec<f64>, g: f64, gs: &Vec<f64>, i: usize) -> f64 {
+pub fn linear_extend(f: f64, fs: &[f64], g: f64, gs: &[f64], i: usize) -> f64 {
     let h = gs[i];
     if h == 0.0 {
         return g;

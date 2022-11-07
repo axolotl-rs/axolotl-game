@@ -1,16 +1,12 @@
 use crate::world::entity::properties::{Food, Health, Location};
 use ahash::{AHashMap, AHashSet};
-
-use dumbledore::component::Component;
+use hecs::Bundle;
 
 use axolotl_api::world::BlockPosition;
 use axolotl_world::entity::player::PlayerData;
-use dumbledore::Bundle;
 
 #[derive(Debug, Clone)]
 pub struct Chunks(pub AHashSet<(i64, i64)>);
-
-impl Component for Chunks {}
 
 #[derive(Debug, Clone, Bundle)]
 pub struct GamePlayer {
@@ -18,12 +14,18 @@ pub struct GamePlayer {
     pub health: Health,
     pub position: Location,
 }
+
 impl From<PlayerData> for GamePlayer {
     fn from(_data: PlayerData) -> Self {
         todo!()
     }
 }
 
+impl Into<PlayerData> for GamePlayer {
+    fn into(self) -> PlayerData {
+        todo!()
+    }
+}
 #[derive(Debug)]
 pub enum PlayerUpdate {
     LoadChunk {
@@ -40,4 +42,5 @@ pub enum PlayerUpdate {
         // TODO data
     },
     SectionUpdate(AHashMap<i64, Vec<i64>>),
+    FailedToLoadPlayer,
 }

@@ -7,59 +7,28 @@ use axolotl_api::world::World;
 use parking_lot::RwLock;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+pub type ChunkMapWrap = Arc<ChunkMap<Minecraft19WorldAccessor>>;
 
-pub trait WorldResourcePool {
-    fn world_group(&self) -> &WorldGrouping;
-}
-
+///
 #[derive(Debug)]
 pub struct SharedWorldResourcePool {
     pub player_access: Arc<Minecraft19PlayerAccess>,
     pub worlds: Vec<AxolotlWorld>,
-    pub chunk_maps: Vec<Arc<ChunkMap<Minecraft19WorldAccessor>>>,
+    pub chunk_maps: Vec<ChunkMapWrap>,
     pub running: Arc<AtomicBool>,
 }
 
 impl SharedWorldResourcePool {
-    pub fn tick(mut self) {
-        // TODO add timing
-        while self.running.load(Ordering::Relaxed) {
-            for world in self.worlds.iter_mut() {
-                world.tick();
-            }
+    pub fn tick(worlds: &mut [AxolotlWorld]) {
+        // As of now this is more for representing the future
+        for world in worlds.iter_mut() {
+            world.tick();
         }
     }
-    pub fn update_chunks(&self) {
-        for chunk_map in &self.chunk_maps {
+    pub fn update_chunks(chunk_maps: Vec<ChunkMapWrap>) -> Vec<ChunkMapWrap> {
+        for chunk_map in chunk_maps.iter() {
             chunk_map.handle_updates();
         }
+        chunk_maps
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct OwnedWorldResourcePool {
-    pub world_group: WorldGrouping,
-    pub world: Arc<RwLock<AxolotlWorld>>,
-    pub chunk_map: Arc<ChunkMap<Minecraft19WorldAccessor>>,
-    pub running: Arc<AtomicBool>,
-}
-
-impl OwnedWorldResourcePool {
-    pub fn tick(&self) {
-        // TODO add timing
-        while self.running.load(Ordering::Relaxed) {
-            self.world.write().tick();
-        }
-    }
-    pub fn update_chunks(&self) {
-        self.chunk_map.handle_updates();
-    }
-}
-
-pub enum GenericWorldResourcePool {
-    Shared(SharedWorldResourcePool),
-    Owned(OwnedWorldResourcePool),
-}
-impl GenericWorldResourcePool {
-    pub fn run(mut self) {}
 }

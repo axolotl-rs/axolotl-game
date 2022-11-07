@@ -27,24 +27,24 @@ impl ChunkPos {
         self.1
     }
 }
-impl<N: From<i32>> Into<(N, N)> for ChunkPos {
-    fn into(self) -> (N, N) {
-        (self.0.into(), self.1.into())
+impl<N: From<i32>> From<ChunkPos> for (N, N) {
+    fn from(val: ChunkPos) -> Self {
+        (val.0.into(), val.1.into())
     }
 }
-impl Into<(i32, i32)> for &'_ ChunkPos {
-    fn into(self) -> (i32, i32) {
-        (self.0, self.1)
+impl From<&'_ ChunkPos> for (i32, i32) {
+    fn from(val: &'_ ChunkPos) -> Self {
+        (val.0, val.1)
     }
 }
-impl Into<i64> for ChunkPos {
-    fn into(self) -> i64 {
-        into_condensed_location(self.0 as i64, self.1 as i64) as i64
+impl From<ChunkPos> for i64 {
+    fn from(val: ChunkPos) -> Self {
+        into_condensed_location(val.0 as i64, val.1 as i64) as i64
     }
 }
-impl Into<u64> for ChunkPos {
-    fn into(self) -> u64 {
-        into_condensed_location(self.0 as i64, self.1 as i64)
+impl From<ChunkPos> for u64 {
+    fn from(val: ChunkPos) -> Self {
+        into_condensed_location(val.0 as i64, val.1 as i64)
     }
 }
 impl From<i64> for ChunkPos {

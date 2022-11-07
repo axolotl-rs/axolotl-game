@@ -286,16 +286,14 @@ impl LevelReader for Minecraft19WorldAccessor {
                         Ok(true)
                     } else {
                         self.dead_chunks.lock().push_back(v);
-                        return Ok(false);
+                        Ok(false)
                     }
+                } else if let Some((_, mut raw_chunk)) = region.chunks.read_chunk(&region_loc)? {
+                    chunk.load_from_chunk(self.game.clone(), &mut raw_chunk, None);
+                    self.dead_chunks.lock().push_back(raw_chunk);
+                    Ok(true)
                 } else {
-                    if let Some((_, mut raw_chunk)) = region.chunks.read_chunk(&region_loc)? {
-                        chunk.load_from_chunk(self.game.clone(), &mut raw_chunk, None);
-                        self.dead_chunks.lock().push_back(raw_chunk);
-                        Ok(true)
-                    } else {
-                        return Ok(false);
-                    }
+                    Ok(false)
                 }
             } else {
                 warn!("Chunk Outside Bounds: {:?}", chunk_pos);
@@ -317,14 +315,12 @@ impl LevelReader for Minecraft19WorldAccessor {
                     {
                         Ok(Some(v))
                     } else {
-                        return Ok(None);
+                        Ok(None)
                     }
+                } else if let Some((_, raw_chunk)) = region.chunks.read_chunk(&region_loc)? {
+                    Ok(Some(raw_chunk))
                 } else {
-                    if let Some((_, raw_chunk)) = region.chunks.read_chunk(&region_loc)? {
-                        Ok(Some(raw_chunk))
-                    } else {
-                        return Ok(None);
-                    }
+                    Ok(None)
                 }
             } else {
                 warn!("Chunk Outside Bounds: {:?}", chunk_pos);
@@ -338,7 +334,7 @@ impl LevelWriter for Minecraft19WorldAccessor {
 
     fn save_chunk(&self, chunk_pos: ChunkPos, chunk: impl IntoRawChunk) -> Result<(), Self::Error> {
         self.region(&chunk_pos, |region| {
-            let index = RegionHeader::get_index(&chunk_pos) as usize;
+            let index = RegionHeader::get_index(chunk_pos) as usize;
             if let Some(region_loc) = region.chunks.region_header.locations.get(index) {
                 let _region_loc = *region_loc;
                 if let Some(mut v) = self.dead_chunks.lock().pop_front() {

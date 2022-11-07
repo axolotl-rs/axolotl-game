@@ -23,8 +23,8 @@ pub fn test() {
     }
     let header = {
         let mut file = OpenOptions::new().read(true).open(&path).unwrap();
-        let header = RegionHeader::read_region_header(&mut file).unwrap();
-        header
+
+        RegionHeader::read_region_header(&mut file).unwrap()
     };
     let mut region = RegionFile {
         file: path.clone(),

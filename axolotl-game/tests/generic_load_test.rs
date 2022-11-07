@@ -44,26 +44,28 @@ pub fn load_game() {
         8,
         8,
         world,
-        ChunkSettings::Flat(FlatSettings {
-            biome: "minecraft:plains".to_string(),
-            features: false,
-            lakes: false,
-            layers: vec![
-                Layer {
-                    block: "minecraft:bedrock".to_string(),
-                    height: 1,
-                },
-                Layer {
-                    block: "minecraft:dirt".to_string(),
-                    height: 2,
-                },
-                Layer {
-                    block: "minecraft:oak_planks".to_string(),
-                    height: 1,
-                },
-            ],
-            structure_overrides: vec![],
-        }),
+        ChunkSettings::Flat {
+            settings: FlatSettings {
+                biome: "minecraft:plains".to_string(),
+                features: false,
+                lakes: false,
+                layers: vec![
+                    Layer {
+                        block: "minecraft:bedrock".to_string(),
+                        height: 1,
+                    },
+                    Layer {
+                        block: "minecraft:dirt".to_string(),
+                        height: 2,
+                    },
+                    Layer {
+                        block: "minecraft:oak_planks".to_string(),
+                        height: 1,
+                    },
+                ],
+                structure_overrides: vec![],
+            },
+        },
         Arc::new(Minecraft19PlayerAccess::new(player)),
         0,
         OwnedNameSpaceKey::new("minecraft".to_string(), "overworld".to_string()),

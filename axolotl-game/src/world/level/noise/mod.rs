@@ -70,7 +70,7 @@ impl ChunkGenerator for NoiseGenerator {
     fn generate_chunk(&self, chunk_x: i32, chunk_z: i32) -> Self::Chunk {
         let mut chunk = AxolotlChunk::new(ChunkPos::new(chunk_x, chunk_z));
         self.generate_chunk_into(&mut chunk);
-        return chunk;
+        chunk
     }
 
     fn generate_chunk_into(&self, _chunk: &mut Self::Chunk) {

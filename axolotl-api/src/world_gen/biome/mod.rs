@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::{Debug, Formatter};
 use std::str::FromStr;
 
@@ -75,12 +76,10 @@ impl Serialize for Air {
     where
         S: Serializer,
     {
-        if self.0.len() == 1 {
-            serializer.serialize_str(&self.0[0].to_string())
-        } else if self.0.len() > 1 {
-            serializer.collect_seq(self.0.iter().map(|k| k.to_string()))
-        } else {
-            serializer.serialize_none()
+        match self.0.len().cmp(&1) {
+            Ordering::Less => serializer.serialize_none(),
+            Ordering::Equal => serializer.serialize_str(&self.0[0].to_string()),
+            Ordering::Greater => serializer.collect_seq(self.0.iter().map(|k| k.to_string())),
         }
     }
 }

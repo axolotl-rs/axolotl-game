@@ -52,7 +52,7 @@ impl<G: Game> PartialEq for InnerMinecraftBlock<G> {
         self.id() == other.id()
     }
 }
-impl<'game, G: Game> ItemType for InnerMinecraftBlock<G> {}
+impl<G: Game> ItemType for InnerMinecraftBlock<G> {}
 
 impl<G: Game> NumericId for InnerMinecraftBlock<G> {
     fn id(&self) -> usize {

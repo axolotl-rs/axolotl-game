@@ -28,9 +28,9 @@ pub enum AxolotlBlockSection {
         block_palette: Vec<PlacedBlock>,
     },
 }
-impl Into<BlockStates> for AxolotlBlockSection {
-    fn into(self) -> BlockStates {
-        match self {
+impl From<AxolotlBlockSection> for BlockStates {
+    fn from(val: AxolotlBlockSection) -> Self {
+        match val {
             AxolotlBlockSection::Empty => BlockStates {
                 data: None,
                 palette: vec![PaletteItem {
@@ -148,7 +148,6 @@ impl AxolotlBlockSection {
         if let AxolotlBlockSection::SingleBlock(block) = replace {
             if let AxolotlBlockSection::Full { block_palette, .. } = self {
                 block_palette.push(block);
-                return;
             } else {
                 unreachable!()
             }
@@ -249,11 +248,7 @@ impl AxolotlBlockSection {
         match self {
             AxolotlBlockSection::Empty => true,
             AxolotlBlockSection::SingleBlock(v) => {
-                if <InnerMinecraftBlock<AxolotlGame> as Block<AxolotlGame>>::is_air(&v.block) {
-                    true
-                } else {
-                    false
-                }
+                <InnerMinecraftBlock<AxolotlGame> as Block<AxolotlGame>>::is_air(&v.block)
             }
             AxolotlBlockSection::Full { .. } => false,
         }

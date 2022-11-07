@@ -36,23 +36,23 @@ define_simple_function!(abs, value { value.abs() });
 ///https://minecraft.fandom.com/wiki/Density_function#max
 define_simple_function!(max, one, two, state, {
     let one = one.compute(state);
-    return if one >= two.max() {
+    if one >= two.max() {
         one
     } else {
         let two = two.compute(state);
         one.max(two)
-    };
+    }
 });
 
 /// https://minecraft.fandom.com/wiki/Density_function#min
 define_simple_function!(min, one, two, state, {
     let one = one.compute(state);
-    return if one <= two.min() {
+    if one <= two.min() {
         one
     } else {
         let two = two.compute(state);
         one.min(two)
-    };
+    }
 });
 /// https://minecraft.fandom.com/wiki/Density_function#add
 define_simple_function!(add, one, two, state, {
@@ -210,7 +210,7 @@ pub mod one_param {
                     })),
                 }
             } else {
-                return Err(BuildDefResult::NotFound(value));
+                Err(BuildDefResult::NotFound(value))
             }
         }
     }
@@ -303,7 +303,7 @@ pub mod two_param {
                     })),
                 }
             } else {
-                return Err(BuildDefResult::NotFound(parent));
+                Err(BuildDefResult::NotFound(parent))
             }
         }
         #[inline(always)]
