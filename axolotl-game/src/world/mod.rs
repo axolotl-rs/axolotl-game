@@ -27,6 +27,7 @@ use axolotl_world::level::{Dimension, WorldGenSettings};
 use chunk::placed_block::PlacedBlock;
 use entity::player::PlayerUpdate;
 use hecs::{Entity, World as ECSWorld};
+use parking_lot::Mutex;
 use serde_json::json;
 
 pub mod chunk;
@@ -39,7 +40,7 @@ pub mod resource_pool;
 use crate::world::entity::properties::Location;
 use crate::world::level::accessor::v_19::player::Minecraft19PlayerAccess;
 use crate::world::level::accessor::v_19::Minecraft19WorldAccessor;
-use crate::{AxolotlGame, Error, FlumeHack, Sender};
+use crate::{AxolotlGame, Error, Sender};
 
 #[derive(Debug)]
 pub enum ChunkUpdate {
@@ -53,6 +54,7 @@ pub enum ChunkUpdate {
         set_block: Option<(BlockPosition, PlacedBlock)>,
     },
 }
+
 impl ChunkUpdate {
     pub fn get_region(&self) -> (i32, i32) {
         match self {
@@ -61,27 +63,34 @@ impl ChunkUpdate {
         }
     }
 }
+pub type PlayerLocation = Arc<Mutex<Location>>;
 #[derive(Debug)]
 pub struct WorldPlayer {
     pub entity: Entity,
     pub uuid: Uuid,
     pub sender: Sender<Arc<PlayerUpdate>>,
+    pub player_location: PlayerLocation,
 }
+
 impl PartialEq for WorldPlayer {
     fn eq(&self, other: &Self) -> bool {
         self.uuid == other.uuid && self.entity == other.entity
     }
 }
+
 impl Eq for WorldPlayer {}
+
 impl Hash for WorldPlayer {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.uuid.hash(state);
     }
 }
+
 #[derive(Debug, Clone, Default)]
 pub struct ChunkTickets {
     pub tickets: AHashMap<ChunkPos, AHashSet<Arc<WorldPlayer>>>,
 }
+
 impl ChunkTickets {
     pub fn remove_player(&mut self, player: &Arc<WorldPlayer>) {
         for (_, players) in self.tickets.iter_mut() {
@@ -99,6 +108,7 @@ impl ChunkTickets {
         }
     }
 }
+
 #[derive(Debug)]
 pub enum ServerUpdateIn {
     // A player has joined the server
@@ -113,6 +123,7 @@ pub enum ServerUpdateIn {
         z: i32,
     },
 }
+
 #[derive(Debug)]
 pub enum ServerUpdateOut {}
 
@@ -133,6 +144,15 @@ pub struct InternalWorldRef {
     pub receiver: crate::Receiver<ServerUpdateOut>,
 }
 
+impl InternalWorldRef {
+    fn sender(&self) -> &crate::Sender<ServerUpdateIn> {
+        &self.sender
+    }
+    fn receiver(&self) -> &crate::Receiver<ServerUpdateOut> {
+        &self.receiver
+    }
+}
+
 pub struct AxolotlWorld {
     pub full_name: String,
     pub name: String,
@@ -147,6 +167,7 @@ pub struct AxolotlWorld {
     pub server_update_sender: crate::Sender<ServerUpdateOut>,
     pub player_access: Arc<Minecraft19PlayerAccess>,
 }
+
 impl AxolotlWorld {
     pub fn load(
         group: impl AsRef<str>,
@@ -155,8 +176,8 @@ impl AxolotlWorld {
         player_access: Arc<Minecraft19PlayerAccess>,
         generator: ChunkSettings,
     ) -> Result<WorldLoad, Error> {
-        let (server_update_sender, server_update_receiver) = flume::unbounded();
-        let (to_sever_update_sender, to_sever_update_receiver) = flume::unbounded();
+        let (server_update_sender, server_update_receiver) = crate::unbounded();
+        let (to_sever_update_sender, to_sever_update_receiver) = crate::unbounded();
 
         let accessor = Minecraft19WorldAccessor::load(game.clone(), directory)?;
         let generator = AxolotlGenerator::new(game, generator);
@@ -214,8 +235,8 @@ impl AxolotlWorld {
             bonus_chest: false,
         };
         let generator = AxolotlGenerator::new(game.clone(), chunk_generator);
-        let (server_update_sender, server_update_receiver) = flume::unbounded();
-        let (to_sever_update_sender, to_sever_update_receiver) = flume::unbounded();
+        let (server_update_sender, server_update_receiver) = crate::unbounded();
+        let (to_sever_update_sender, to_sever_update_receiver) = crate::unbounded();
         let mut hasher = DefaultHasher::new();
         group.as_ref().hash(&mut hasher);
         name.hash(&mut hasher);
@@ -287,9 +308,24 @@ impl AxolotlWorld {
     }
     pub fn tick_entities(&mut self) {}
     fn handle_updates(&mut self) {
-        let hack = FlumeHack::from(self.server_update_receiver.drain());
-        for update in hack.queue {
+        let receiver = self.server_update_receiver.clone();
+        for update in receiver.try_iter() {
             self.handle_update(update);
+        }
+    }
+    fn handle_player_locations(&mut self) {
+        for player in self.clients.iter() {
+            let pos = self
+                .game_world
+                .entity(player.entity)
+                .expect("Player entity not found");
+            let mut pos = pos.get::<&mut Location>().unwrap();
+            let active_location = player.player_location.lock();
+            if active_location.eq(&pos) {
+                continue;
+            }
+            pos.update_from_ref(&active_location);
+            // TODO update nearby players
         }
     }
     fn handle_update(&mut self, update: ServerUpdateIn) {
@@ -311,11 +347,15 @@ impl AxolotlWorld {
                     }
                 };
                 let game_player = GamePlayer::from(player);
+
+                let shared_location = Arc::new(Mutex::new(game_player.position.clone()));
+                sender.send(Arc::new(PlayerUpdate::Location(shared_location.clone())));
                 let entity = self.game_world.spawn(game_player);
                 let player = WorldPlayer {
                     entity,
                     sender,
                     uuid,
+                    player_location: shared_location,
                 };
                 self.clients.push(Arc::new(player));
             }
@@ -357,11 +397,13 @@ impl AxolotlWorld {
         }
     }
 }
+
 impl Hash for AxolotlWorld {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.full_name.hash(state);
     }
 }
+
 impl Debug for AxolotlWorld {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AxolotlWorld")
@@ -376,6 +418,7 @@ impl Debug for AxolotlWorld {
             .finish()
     }
 }
+
 impl World for AxolotlWorld {
     type Chunk = AxolotlChunk;
     type WorldBlock = PlacedBlock;
@@ -386,6 +429,7 @@ impl World for AxolotlWorld {
     }
 
     fn tick(&mut self) {
+        self.handle_player_locations();
         self.handle_updates();
         // TODO: Do Game Tick including: entities, liquids, etc
     }

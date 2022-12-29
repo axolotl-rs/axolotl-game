@@ -10,10 +10,6 @@
     "1.19.1": {
       "protocol_version": 760,
       "world_version": 3120
-    },
-    "1.19.0": {
-      "protocol_version": 759,
-      "world_version": 3120
     }
   }
 }

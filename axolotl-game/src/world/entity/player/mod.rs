@@ -1,7 +1,9 @@
 use crate::world::entity::properties::{Food, Health, Location};
 use ahash::{AHashMap, AHashSet};
 use hecs::Bundle;
+use std::sync::Arc;
 
+use crate::world::PlayerLocation;
 use axolotl_api::world::BlockPosition;
 use axolotl_world::entity::player::PlayerData;
 
@@ -28,6 +30,7 @@ impl Into<PlayerData> for GamePlayer {
 }
 #[derive(Debug)]
 pub enum PlayerUpdate {
+    Location(PlayerLocation),
     LoadChunk {
         // TODO data
     },
