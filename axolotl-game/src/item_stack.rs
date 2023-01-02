@@ -1,15 +1,16 @@
 use crate::AxolotlGame;
 
 use axolotl_api::item::ItemStack;
+use axolotl_api::world::World;
 use axolotl_items::items::MinecraftItem;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct AxolotlItemStack {
-    pub item: MinecraftItem<AxolotlGame>,
+pub struct AxolotlItemStack<W: World> {
+    pub item: MinecraftItem<AxolotlGame<W>>,
     pub count: u8,
 }
-impl ItemStack<AxolotlGame> for AxolotlItemStack {
-    fn get_item(&self) -> &MinecraftItem<AxolotlGame> {
+impl<W: World> ItemStack<AxolotlGame<W>> for AxolotlItemStack<W> {
+    fn get_item(&self) -> &MinecraftItem<AxolotlGame<W>> {
         &self.item
     }
 

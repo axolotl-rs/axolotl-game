@@ -7,7 +7,8 @@ pub mod item_stack;
 pub mod registry;
 pub mod world;
 
-pub use crossbeam::channel::{bounded, unbounded, Receiver, Sender};
+//pub use crossbeam::channel::{bounded, unbounded, Receiver, Sender};
+pub use flume::{bounded, unbounded, Receiver, Sender};
 use std::collections::VecDeque;
 
 pub struct ChunkPosSplit(i32, i32);
@@ -48,19 +49,19 @@ pub enum Error {
 
 use crate::world::generator::AxolotlDensityLoader;
 use crate::world::perlin::GameNoise;
-use crate::world::AxolotlWorld;
-use axolotl_api::game::{AxolotlVersion, DataRegistries, Game, Registries};
+use axolotl_api::game::{AxolotlVersion, DataRegistries, Game, Registries, Registry};
 
 use axolotl_api::world_gen::biome::vanilla::DataPackBiome;
 
 use axolotl_api::world_gen::noise::{Noise, NoiseSetting};
-use axolotl_api::NamespacedKey;
+use axolotl_api::{NamespacedId, NamespacedKey};
 
 use axolotl_nbt::serde_impl;
 use flume::Drain;
 pub(crate) use get_type;
 use log::{debug, info};
 use std::fmt::{Debug, Formatter};
+use std::marker::PhantomData;
 use std::mem;
 use std::path::PathBuf;
 
@@ -86,14 +87,14 @@ pub struct GameConfig {
     // The data from https://github.com/PrismarineJS/minecraft-data/
     pub axolotl_data: PathBuf,
 }
-pub struct AxolotlGame {
+pub struct AxolotlGame<W: World> {
     pub data_registries: AxolotlDataRegistries,
-    pub registries: AxolotlRegistries,
+    pub registries: AxolotlRegistries<W>,
     pub density_loader: AxolotlDensityLoader,
     pub minecraft_version: MinecraftVersion,
     pub axolotl_version: AxolotlVersion,
 }
-impl AxolotlGame {
+impl<W: World> AxolotlGame<W> {
     pub fn load(config: GameConfig) -> Result<Self, Error> {
         let minecraft_version: MinecraftVersion =
             serde_json::from_str(MINECRAFT_VERSION).expect("Failed to parse minecraft version");
@@ -181,11 +182,15 @@ impl AxolotlGame {
             axolotl_version,
         })
     }
-    pub fn get_block(&self, _ey: impl NamespacedKey) -> Option<&MinecraftBlock<AxolotlGame>> {
-        todo!("get_block")
+    pub fn get_block(&self, key: impl NamespacedKey) -> Option<&MinecraftBlock<Self>> {
+        self.registries.blocks.get_by_namespace(format!(
+            "{}:{}",
+            key.get_namespace(),
+            key.get_key()
+        ))
     }
 }
-impl Debug for AxolotlGame {
+impl<W: World> Debug for AxolotlGame<W> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -194,24 +199,17 @@ impl Debug for AxolotlGame {
         )
     }
 }
-impl Game for AxolotlGame {
-    type World = AxolotlWorld;
+impl<W: World> Game for AxolotlGame<W> {
     type Biome = DataPackBiome;
+    type World = W;
     type Block = MinecraftBlock<Self>;
     type Item = MinecraftItem<Self>;
-    type ItemStack = AxolotlItemStack;
+    type ItemStack = AxolotlItemStack<W>;
 
     type DensityLoader = AxolotlDensityLoader;
-    type Registries = AxolotlRegistries;
+    type Registries = AxolotlRegistries<W>;
     type DataRegistries = AxolotlDataRegistries;
     type ChatType = AxolotlChatType;
-
-    fn create_placed_block(
-        &self,
-        block: Self::Block,
-    ) -> <<Self as Game>::World as World>::WorldBlock {
-        todo!("create_placed_block")
-    }
 
     fn registries(&self) -> &Self::Registries {
         &self.registries
@@ -229,15 +227,15 @@ impl Game for AxolotlGame {
         &mut self.data_registries
     }
 }
-pub struct AxolotlRegistries {
+pub struct AxolotlRegistries<W: World> {
     pub biomes: SimpleRegistry<DataPackBiome>,
-    pub blocks: SimpleRegistry<MinecraftBlock<AxolotlGame>>,
+    pub blocks: SimpleRegistry<MinecraftBlock<AxolotlGame<W>>>,
     pub chat_types: SimpleRegistry<AxolotlChatType>,
 }
-impl Registries<AxolotlGame> for AxolotlRegistries {
+impl<W: World> Registries<AxolotlGame<W>> for AxolotlRegistries<W> {
     type BiomeRegistry = SimpleRegistry<DataPackBiome>;
-    type BlockRegistry = SimpleRegistry<MinecraftBlock<AxolotlGame>>;
-    type ItemRegistry = SimpleRegistry<MinecraftItem<AxolotlGame>>;
+    type BlockRegistry = SimpleRegistry<MinecraftBlock<AxolotlGame<W>>>;
+    type ItemRegistry = SimpleRegistry<MinecraftItem<AxolotlGame<W>>>;
     type ChatTypeRegistry = SimpleRegistry<AxolotlChatType>;
 
     fn get_biome_registry(&self) -> &Self::BiomeRegistry {

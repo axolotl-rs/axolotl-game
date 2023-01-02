@@ -74,7 +74,7 @@ impl From<(i64, i16, i64)> for BlockPosition {
     }
 }
 
-pub trait World: Send + Sync + Hash + Debug {
+pub trait World: Send + Sync + Hash + Debug + PartialEq {
     type Chunk;
     type WorldBlock;
     type NoiseGenerator: crate::world_gen::noise::ChunkGenerator<Chunk = Self::Chunk>;

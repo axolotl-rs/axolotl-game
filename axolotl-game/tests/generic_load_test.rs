@@ -1,13 +1,50 @@
-use axolotl_api::OwnedNameSpaceKey;
-use axolotl_game::world::generator::ChunkSettings;
-use axolotl_game::world::level::accessor::v_19::player::Minecraft19PlayerAccess;
-use axolotl_game::world::level::flat::{FlatSettings, Layer};
-use axolotl_game::world::{AxolotlWorld, ChunkUpdate};
+use axolotl_api::world::{BlockPosition, World};
+use axolotl_api::world_gen::chunk::ChunkPos;
+use axolotl_api::world_gen::noise::ChunkGenerator;
+use axolotl_game::world::chunk::placed_block::PlacedBlock;
+use axolotl_game::world::chunk::AxolotlChunk;
+use axolotl_game::world::generator::AxolotlGenerator;
+use axolotl_game::world::level::noise::NoiseGenerator;
 use axolotl_game::GameConfig;
 use log::{error, info};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct TestWorld {}
+impl World for TestWorld {
+    type Chunk = AxolotlChunk<Self>;
+    type WorldBlock = PlacedBlock<Self>;
+    type NoiseGenerator = AxolotlGenerator<Self>;
 
+    fn get_name(&self) -> &str {
+        todo!()
+    }
+
+    fn tick(&mut self) {
+        todo!()
+    }
+
+    fn generator(&self) -> &Self::NoiseGenerator {
+        todo!()
+    }
+
+    fn set_block(
+        &self,
+        location: BlockPosition,
+        block: Self::WorldBlock,
+        require_loaded: bool,
+    ) -> bool {
+        todo!()
+    }
+
+    fn set_blocks(
+        &self,
+        chunk_pos: ChunkPos,
+        blocks: impl Iterator<Item = (BlockPosition, Self::WorldBlock)>,
+    ) {
+        todo!()
+    }
+}
 #[test]
 pub fn load_game() {
     simple_log::quick!();
@@ -18,76 +55,7 @@ pub fn load_game() {
         data_packs: vec![],
         axolotl_data: PathBuf::from(axolotl_data),
     };
-    let game = axolotl_game::AxolotlGame::load(config)
+    let game = axolotl_game::AxolotlGame::<TestWorld>::load(config)
         .map(Arc::new)
         .unwrap();
-
-    let world = Path::new("world");
-    if world.exists() {
-        std::fs::remove_dir_all(world).unwrap();
-    }
-    std::fs::create_dir(world).unwrap();
-
-    let world = world.canonicalize().unwrap();
-    let player = world.join("player");
-    if player.exists() {
-        std::fs::remove_dir_all(&player).unwrap();
-    }
-    std::fs::create_dir(&player).unwrap();
-
-    info!("Attempting to create a world at {:?}", world);
-
-    let world_load = AxolotlWorld::create(
-        game,
-        "test",
-        "world".to_string(),
-        8,
-        8,
-        world,
-        ChunkSettings::Flat {
-            settings: FlatSettings {
-                biome: "minecraft:plains".to_string(),
-                features: false,
-                lakes: false,
-                layers: vec![
-                    Layer {
-                        block: "minecraft:bedrock".to_string(),
-                        height: 1,
-                    },
-                    Layer {
-                        block: "minecraft:dirt".to_string(),
-                        height: 2,
-                    },
-                    Layer {
-                        block: "minecraft:oak_planks".to_string(),
-                        height: 1,
-                    },
-                ],
-                structure_overrides: vec![],
-            },
-        },
-        Arc::new(Minecraft19PlayerAccess::new(player)),
-        0,
-        OwnedNameSpaceKey::new("minecraft".to_string(), "overworld".to_string()),
-    )
-    .expect("Failed to create world");
-    let axolotl_world = world_load.world;
-    for x in 0..=32 {
-        for z in 0..=32 {
-            axolotl_world.chunk_map.queue.push(ChunkUpdate::Load {
-                x,
-                z,
-                set_block: None,
-            });
-        }
-    }
-    info!("Creating Chunks");
-    axolotl_world.chunk_map.handle_updates();
-    info!("Done Creating Chunks");
-    info!("Saving Chunks");
-    if let Err(e) = axolotl_world.chunk_map.save_all() {
-        error!("Failed to save chunks: {}", e);
-    };
-    info!("Done Saving Chunks");
-    axolotl_world.chunk_map.accessor.force_close_all();
 }

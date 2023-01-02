@@ -1,10 +1,10 @@
 pub mod player;
 
 use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter, RawChunk};
-use crate::world::AxolotlWorld;
 use crate::Error::WorldError;
 use crate::{AxolotlGame, Error};
 use ahash::AHashMap;
+use axolotl_api::world::World;
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_nbt::serde_impl;
 use axolotl_world::entity::RawEntities;
@@ -13,7 +13,7 @@ use axolotl_world::level::{DataPacks, LevelDat, MinecraftVersion, RootWrapper, W
 use axolotl_world::region::file::{RegionFile, RegionFileType};
 use axolotl_world::region::RegionHeader;
 use axolotl_world::world::axolotl::{AxolotlWorld as RawWorld, AxolotlWorldError};
-use axolotl_world::world::World;
+use axolotl_world::world::World as RawWorldTrait;
 use flate2::read::GzDecoder;
 use itoa::Buffer;
 use log::{debug, info, warn};
@@ -35,16 +35,16 @@ pub struct ActiveRegion {
 }
 type RegionRef = Arc<Mutex<ActiveRegion>>;
 #[derive(Debug)]
-pub struct Minecraft19WorldAccessor {
+pub struct Minecraft19WorldAccessor<W: World> {
     pub active_regions: RwLock<AHashMap<(i32, i32), RegionRef>>,
     pub world: RawWorld,
     pub dead_chunks: Mutex<VecDeque<RawChunk>>,
     pub dead_regions: Mutex<VecDeque<(RegionHeader, Vec<u8>)>>,
-    pub game: Arc<AxolotlGame>,
+    pub game: Arc<AxolotlGame<W>>,
 }
 
-impl Minecraft19WorldAccessor {
-    fn new(game: Arc<AxolotlGame>, world: RawWorld) -> Self {
+impl<W: World> Minecraft19WorldAccessor<W> {
+    fn new(game: Arc<AxolotlGame<W>>, world: RawWorld) -> Self {
         Self {
             active_regions: RwLock::new(AHashMap::with_capacity(MAX_NUMBER_OPEN_REGIONS)),
             world,
@@ -53,7 +53,7 @@ impl Minecraft19WorldAccessor {
             game,
         }
     }
-    pub fn load(game: Arc<AxolotlGame>, path: PathBuf) -> Result<Self, Error> {
+    pub fn load(game: Arc<AxolotlGame<W>>, path: PathBuf) -> Result<Self, Error> {
         let level_dat_file = path.join("level.dat");
         if !level_dat_file.exists() {
             return Err(Error::WorldError(axolotl_world::Error::WorldDoesNotExist));
@@ -65,7 +65,7 @@ impl Minecraft19WorldAccessor {
         Ok(Self::new(game, world))
     }
     pub fn create(
-        game: Arc<AxolotlGame>,
+        game: Arc<AxolotlGame<W>>,
         world_gen: impl Into<WorldGenSettings>,
         path: PathBuf,
         name: String,
@@ -263,13 +263,13 @@ impl Minecraft19WorldAccessor {
         }
     }
 }
-impl LevelReader for Minecraft19WorldAccessor {
+impl<W: World> LevelReader<W> for Minecraft19WorldAccessor<W> {
     type Error = crate::Error;
 
     fn get_chunk_into(
         &self,
         chunk_pos: &ChunkPos,
-        chunk: &mut impl IntoRawChunk,
+        chunk: &mut impl IntoRawChunk<W>,
     ) -> Result<bool, Self::Error> {
         self.region(chunk_pos, |region| {
             let index = RegionHeader::get_index(chunk_pos) as usize;
@@ -330,10 +330,14 @@ impl LevelReader for Minecraft19WorldAccessor {
         })
     }
 }
-impl LevelWriter for Minecraft19WorldAccessor {
+impl<W: World> LevelWriter<W> for Minecraft19WorldAccessor<W> {
     type Error = crate::Error;
 
-    fn save_chunk(&self, chunk_pos: ChunkPos, chunk: impl IntoRawChunk) -> Result<(), Self::Error> {
+    fn save_chunk(
+        &self,
+        chunk_pos: ChunkPos,
+        chunk: impl IntoRawChunk<W>,
+    ) -> Result<(), Self::Error> {
         self.region(&chunk_pos, |region| {
             let index = RegionHeader::get_index(chunk_pos) as usize;
             if let Some(region_loc) = region.chunks.region_header.locations.get(index) {

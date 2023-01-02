@@ -19,6 +19,8 @@ axolotl-noise = { git = "https://github.com/axolotl-rs/axolotl-noise.git", featu
 axolotl-world = { path = "../axolotl-world" }
 axolotl-items = { path = "../axolotl-items" }
 axolotl-data-rs = { git = "https://github.com/axolotl-rs/axolotl-data-rs.git" }
+minecraft_protocol = { path = "../../minecraft_protocol" }
+auto_impl = "1.0.1"
 dashmap = "5.4"
 parking_lot = "0.12"
 flume = { version = "0.10", features = ["async"] }

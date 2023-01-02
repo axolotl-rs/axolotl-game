@@ -1,4 +1,4 @@
-use axolotl_api::world::BlockPosition;
+use axolotl_api::world::{BlockPosition, World};
 
 use axolotl_api::OwnedNameSpaceKey;
 use log::{debug, info, warn};
@@ -13,7 +13,7 @@ use tux_lockfree::queue::Queue;
 use crate::world::chunk::section::AxolotlChunkSection;
 use crate::world::generator::AxolotlGenerator;
 use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter};
-use crate::world::{AxolotlWorld, ChunkUpdate};
+use crate::world::ChunkUpdate;
 use crate::{AxolotlGame, Error};
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_api::world_gen::noise::ChunkGenerator;
@@ -27,14 +27,22 @@ pub mod consts;
 pub mod placed_block;
 pub mod section;
 
-#[derive(Debug, Clone)]
-pub struct AxolotlChunk {
+#[derive(Debug)]
+pub struct AxolotlChunk<W: World> {
     pub chunk_pos: ChunkPos,
-    pub sections: [AxolotlChunkSection; (consts::Y_SIZE / consts::SECTION_Y_SIZE)],
+    pub sections: [AxolotlChunkSection<W>; (consts::Y_SIZE / consts::SECTION_Y_SIZE)],
 }
-impl AxolotlChunk {
+impl<W: World> Clone for AxolotlChunk<W> {
+    fn clone(&self) -> Self {
+        Self {
+            chunk_pos: self.chunk_pos,
+            sections: self.sections.clone(),
+        }
+    }
+}
+impl<W: World> AxolotlChunk<W> {
     pub fn new(chunk_pos: ChunkPos) -> Self {
-        let mut sections: [AxolotlChunkSection; (consts::Y_SIZE / consts::SECTION_Y_SIZE)] =
+        let mut sections: [AxolotlChunkSection<W>; (consts::Y_SIZE / consts::SECTION_Y_SIZE)] =
             Default::default();
         for index in consts::MIN_Y_SECTION..consts::MAX_Y_SECTION {
             let section = &mut sections[(index + 4) as usize];
@@ -45,7 +53,7 @@ impl AxolotlChunk {
             sections,
         }
     }
-    pub fn set_block(&mut self, mut pos: BlockPosition, block: PlacedBlock) {
+    pub fn set_block(&mut self, mut pos: BlockPosition, block: PlacedBlock<W>) {
         let id = pos.section();
         if id >= self.sections.len() {
             warn!("Tried to set block out of bounds");
@@ -64,10 +72,10 @@ impl AxolotlChunk {
         section.biomes.set_biome(pos, biome);
     }
 }
-impl IntoRawChunk for AxolotlChunk {
+impl<W: World> IntoRawChunk<W> for AxolotlChunk<W> {
     fn load_from_chunk(
         &mut self,
-        game: Arc<AxolotlGame>,
+        game: Arc<AxolotlGame<W>>,
         chunk: &mut RawChunk,
         _entities: Option<&mut RawEntities>,
     ) {
@@ -117,25 +125,25 @@ impl IntoRawChunk for AxolotlChunk {
     }
 }
 #[derive(Debug)]
-pub struct ChunkHandle {
-    pub value: RwLock<AxolotlChunk>,
+pub struct ChunkHandle<W: World> {
+    pub value: RwLock<AxolotlChunk<W>>,
     pub loaded: AtomicBool,
 }
 #[derive(Debug)]
-pub struct ChunkMap<V: LevelReader + LevelWriter + Debug> {
-    pub generator: AxolotlGenerator,
+pub struct ChunkMap<W: World, V: LevelReader<W> + LevelWriter<W> + Debug> {
+    pub generator: AxolotlGenerator<W>,
 
-    pub thread_safe_chunks: Map<ChunkPos, ChunkHandle>,
-    pub dead_chunks: Queue<AxolotlChunk>,
+    pub thread_safe_chunks: Map<ChunkPos, ChunkHandle<W>>,
+    pub dead_chunks: Queue<AxolotlChunk<W>>,
     // Load Queue
-    pub queue: Queue<ChunkUpdate>,
+    pub queue: Queue<ChunkUpdate<W>>,
     pub accessor: V,
 }
-impl<V: LevelReader + LevelWriter + Debug> ChunkMap<V>
+impl<W: World, V: LevelReader<W> + LevelWriter<W> + Debug> ChunkMap<W, V>
 where
-    Error: From<<V as LevelWriter>::Error> + From<<V as LevelReader>::Error>,
+    Error: From<<V as LevelWriter<W>>::Error> + From<<V as LevelReader<W>>::Error>,
 {
-    pub fn new(generator: AxolotlGenerator, accessor: V) -> Self {
+    pub fn new(generator: AxolotlGenerator<W>, accessor: V) -> Self {
         Self {
             generator,
             thread_safe_chunks: Map::new(),
@@ -156,7 +164,7 @@ where
         }
     }
     /// Handles a single update
-    pub fn handle_update(&self, update: ChunkUpdate) -> Result<(), Error> {
+    pub fn handle_update(&self, update: ChunkUpdate<W>) -> Result<(), Error> {
         match update {
             ChunkUpdate::Load { x, z, set_block } => {
                 self.load_chunk(x, z, set_block)?;
@@ -196,7 +204,7 @@ where
         &self,
         x: i32,
         z: i32,
-        update: Option<(BlockPosition, PlacedBlock)>,
+        update: Option<(BlockPosition, PlacedBlock<W>)>,
     ) -> Result<(), Error> {
         let pos = ChunkPos::new(x, z);
         info!("Loading chunk at {:?}", pos);

@@ -3,7 +3,7 @@ use crate::world::chunk::AxolotlChunk;
 use crate::world::perlin::GameNoise;
 use crate::AxolotlGame;
 use axolotl_api::game::{Game, Registry};
-use axolotl_api::world::BlockPosition;
+use axolotl_api::world::{BlockPosition, World};
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_api::world_gen::noise::ChunkGenerator;
 use axolotl_api::NamespacedId;
@@ -26,25 +26,25 @@ pub struct FlatSettings {
     pub structure_overrides: Vec<String>,
 }
 #[derive(Debug, Clone)]
-pub struct LoadedLayer {
-    pub block: MinecraftBlock<AxolotlGame>,
+pub struct LoadedLayer<W: World> {
+    pub block: MinecraftBlock<AxolotlGame<W>>,
     pub height: i16,
 }
 
 #[derive(Debug, Clone)]
-pub struct FlatGenerator {
+pub struct FlatGenerator<W: World> {
     pub settings: FlatSettings,
-    pub layers: Vec<LoadedLayer>,
-    pub game: Arc<AxolotlGame>,
+    pub layers: Vec<LoadedLayer<W>>,
+    pub game: Arc<AxolotlGame<W>>,
 }
 
-impl ChunkGenerator for FlatGenerator {
+impl<W: World> ChunkGenerator for FlatGenerator<W> {
     type PerlinNoise = GameNoise;
     type ChunkSettings = FlatSettings;
-    type Chunk = AxolotlChunk;
-    type GameTy = AxolotlGame;
+    type Chunk = AxolotlChunk<W>;
+    type GameTy = AxolotlGame<W>;
 
-    fn new(game: Arc<AxolotlGame>, settings: FlatSettings) -> Self {
+    fn new(game: Arc<AxolotlGame<W>>, settings: FlatSettings) -> Self {
         let mut layers = Vec::new();
         for layer in settings.layers.iter() {
             let block = game

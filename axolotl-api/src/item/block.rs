@@ -1,3 +1,4 @@
+use auto_impl::auto_impl;
 use axolotl_types::NamespacedKey;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer};
@@ -136,6 +137,8 @@ impl<G: Game> Event for BlockPlaceEvent<'_, G> {
         "block_place"
     }
 }
+
+#[auto_impl(&, Arc)]
 pub trait Block<G: Game>:
     ItemType + NamespacedId + NumericId + for<'event> EventHandler<BlockPlaceEvent<'event, G>>
 {
@@ -147,38 +150,5 @@ pub trait Block<G: Game>:
 
     fn get_default_state(&self) -> Cow<'_, Self::State> {
         Cow::Owned(self.create_default_state())
-    }
-}
-
-impl<B, G: Game> Block<G> for Arc<B>
-where
-    B: Block<G> + NamespacedId + ItemType + for<'event> EventHandler<BlockPlaceEvent<'event, G>>,
-{
-    type State = B::State;
-
-    fn create_default_state(&self) -> Self::State {
-        self.as_ref().create_default_state()
-    }
-
-    fn is_air(&self) -> bool {
-        self.as_ref().is_air()
-    }
-}
-impl<B, G: Game> Block<G> for &'_ B
-where
-    B: Block<G> + NamespacedId + ItemType + for<'event> EventHandler<BlockPlaceEvent<'event, G>>,
-{
-    type State = B::State;
-
-    fn create_default_state(&self) -> Self::State {
-        (*self).create_default_state()
-    }
-
-    fn is_air(&self) -> bool {
-        (*self).is_air()
-    }
-
-    fn get_default_state(&self) -> Cow<'_, Self::State> {
-        (*self).get_default_state()
     }
 }

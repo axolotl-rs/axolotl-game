@@ -7,6 +7,7 @@ use crate::world::chunk::section::{InvalidChunkSection, SectionPosIndex};
 
 use crate::AxolotlGame;
 use axolotl_api::item::block::Block;
+use axolotl_api::world::World;
 use axolotl_api::{NameSpaceRef, OwnedNameSpaceKey};
 use axolotl_items::blocks::InnerMinecraftBlock;
 use axolotl_world::chunk::compact_array::CompactArray;
@@ -14,22 +15,40 @@ use axolotl_world::chunk::{BlockStates, PaletteItem};
 use log::{debug, info, warn};
 use std::mem;
 use std::mem::discriminant;
+
 /// Returns Err(()) if block is outside of the range
-#[derive(Debug, Clone, Default)]
-pub enum AxolotlBlockSection {
+#[derive(Debug, Default)]
+pub enum AxolotlBlockSection<W: World> {
     /// All Air
     #[default]
     Empty,
     /// All of one block type.  Note: Could be air.
-    SingleBlock(PlacedBlock),
+    SingleBlock(PlacedBlock<W>),
     Full {
         blocks: CompactArray,
         /// Will be Empty if is just air
-        block_palette: Vec<PlacedBlock>,
+        block_palette: Vec<PlacedBlock<W>>,
     },
 }
-impl From<AxolotlBlockSection> for BlockStates {
-    fn from(val: AxolotlBlockSection) -> Self {
+impl<W: World> Clone for AxolotlBlockSection<W> {
+    fn clone(&self) -> Self {
+        match self {
+            AxolotlBlockSection::Empty => AxolotlBlockSection::Empty,
+            AxolotlBlockSection::SingleBlock(block) => {
+                AxolotlBlockSection::SingleBlock(block.clone())
+            }
+            AxolotlBlockSection::Full {
+                blocks,
+                block_palette,
+            } => AxolotlBlockSection::Full {
+                blocks: blocks.clone(),
+                block_palette: block_palette.clone(),
+            },
+        }
+    }
+}
+impl<W: World> From<AxolotlBlockSection<W>> for BlockStates {
+    fn from(val: AxolotlBlockSection<W>) -> Self {
         match val {
             AxolotlBlockSection::Empty => BlockStates {
                 data: None,
@@ -58,12 +77,13 @@ impl From<AxolotlBlockSection> for BlockStates {
         }
     }
 }
-impl PartialEq for AxolotlBlockSection {
+impl<W: World> PartialEq for AxolotlBlockSection<W> {
     fn eq(&self, other: &Self) -> bool {
         discriminant(self) == discriminant(other)
     }
 }
-impl<Pos: Into<SectionPosIndex>, Block: Into<PlacedBlock>, Iter> From<Iter> for AxolotlBlockSection
+impl<W: World, Pos: Into<SectionPosIndex>, Block: Into<PlacedBlock<W>>, Iter> From<Iter>
+    for AxolotlBlockSection<W>
 where
     Iter: IntoIterator<Item = (Pos, Block)>,
 {
@@ -95,8 +115,8 @@ where
     }
 }
 
-impl AxolotlBlockSection {
-    pub fn set_block(&mut self, pos: impl Into<SectionPosIndex>, block: PlacedBlock) {
+impl<W: World> AxolotlBlockSection<W> {
+    pub fn set_block(&mut self, pos: impl Into<SectionPosIndex>, block: PlacedBlock<W>) {
         let pos = pos.into();
 
         match self {
@@ -154,7 +174,7 @@ impl AxolotlBlockSection {
             unreachable!()
         }
     }
-    pub fn get_block(&self, pos: impl Into<SectionPosIndex>) -> Option<&PlacedBlock> {
+    pub fn get_block(&self, pos: impl Into<SectionPosIndex>) -> Option<&PlacedBlock<W>> {
         match self {
             AxolotlBlockSection::Empty => None,
             AxolotlBlockSection::SingleBlock(placed) => Some(placed),
@@ -176,7 +196,7 @@ impl AxolotlBlockSection {
 
     pub fn load(
         &mut self,
-        game: &AxolotlGame,
+        game: &AxolotlGame<W>,
         section: &mut BlockStates,
     ) -> Result<(), InvalidChunkSection> {
         if section.data.is_none() {
@@ -247,7 +267,7 @@ impl AxolotlBlockSection {
         match self {
             AxolotlBlockSection::Empty => true,
             AxolotlBlockSection::SingleBlock(v) => {
-                <InnerMinecraftBlock<AxolotlGame> as Block<AxolotlGame>>::is_air(&v.block)
+                <InnerMinecraftBlock<AxolotlGame<W>> as Block<AxolotlGame<W>>>::is_air(&v.block)
             }
             AxolotlBlockSection::Full { .. } => false,
         }

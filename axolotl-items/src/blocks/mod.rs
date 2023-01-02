@@ -16,7 +16,7 @@ use axolotl_api::events::{EventHandler, NoError};
 use axolotl_api::game::Game;
 use generic_block::GenericBlock;
 
-pub type MinecraftBlock<G> = Arc<InnerMinecraftBlock<G>>;
+pub type MinecraftBlock<G: Game> = Arc<InnerMinecraftBlock<G>>;
 
 #[derive(Debug)]
 pub enum InnerMinecraftBlock<G: Game> {
@@ -71,7 +71,10 @@ impl<G: Game> EventHandler<BlockPlaceEvent<'_, G>> for InnerMinecraftBlock<G> {
     fn handle(&self, event: BlockPlaceEvent<G>) -> Result<bool, NoError> {
         match self {
             InnerMinecraftBlock::GenericBlock(block) => block.handle(event),
-            InnerMinecraftBlock::DynamicBlock(b) => b.as_ref().handle(event),
+            InnerMinecraftBlock::DynamicBlock(b) => {
+                // TODO
+                Ok(true)
+            }
             _ => {
                 Ok(false) //??? Can't place air but it shouldnt be called
             }

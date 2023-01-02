@@ -1,7 +1,7 @@
 use crate::world::chunk::biome_section::AxolotlBiomeSection;
 use crate::world::chunk::blocks_section::AxolotlBlockSection;
 use crate::world::chunk::consts::{SECTION_X_SIZE, SECTION_Y_SIZE, SECTION_Z_SIZE};
-use axolotl_api::world::BlockPosition;
+use axolotl_api::world::{BlockPosition, World};
 use axolotl_api::OwnedNameSpaceKey;
 use axolotl_world::chunk::compact_array::CompactArrayIndex;
 use axolotl_world::chunk::ChunkSection;
@@ -70,14 +70,23 @@ pub enum InvalidChunkSection {
     InvalidNamespaceKey(OwnedNameSpaceKey),
 }
 
-#[derive(Debug, Clone)]
-pub struct AxolotlChunkSection {
-    pub blocks: AxolotlBlockSection,
+#[derive(Debug)]
+pub struct AxolotlChunkSection<W: World> {
+    pub blocks: AxolotlBlockSection<W>,
     pub biomes: AxolotlBiomeSection,
     pub y: i8,
 }
-impl From<AxolotlChunkSection> for ChunkSection {
-    fn from(val: AxolotlChunkSection) -> Self {
+impl<W: World> Clone for AxolotlChunkSection<W> {
+    fn clone(&self) -> Self {
+        Self {
+            blocks: self.blocks.clone(),
+            biomes: self.biomes.clone(),
+            y: self.y,
+        }
+    }
+}
+impl<W: World> From<AxolotlChunkSection<W>> for ChunkSection {
+    fn from(val: AxolotlChunkSection<W>) -> Self {
         ChunkSection {
             y_pos: val.y,
             biomes: None, // TODO: Implement biomes
@@ -85,12 +94,12 @@ impl From<AxolotlChunkSection> for ChunkSection {
         }
     }
 }
-impl Default for AxolotlChunkSection {
+impl<W: World> Default for AxolotlChunkSection<W> {
     fn default() -> Self {
-        AxolotlChunkSection::new(0)
+        Self::new(0)
     }
 }
-impl AxolotlChunkSection {
+impl<W: World> AxolotlChunkSection<W> {
     pub fn new(y: i8) -> Self {
         Self {
             blocks: AxolotlBlockSection::default(),

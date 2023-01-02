@@ -10,6 +10,7 @@ use axolotl_api::world_gen::noise::density::DensityContext;
 use axolotl_api::world_gen::noise::{ChunkGenerator, NameSpaceKeyOrType, NoiseSetting};
 use log::warn;
 
+use axolotl_api::world::World;
 use std::sync::Arc;
 
 pub struct ChunkContext {
@@ -36,19 +37,19 @@ pub struct Settings {
     pub biome_source: BiomeSourceSettings,
 }
 #[derive(Debug)]
-pub struct NoiseGenerator {
-    game: Arc<AxolotlGame>,
+pub struct NoiseGenerator<W: World> {
+    game: Arc<AxolotlGame<W>>,
     noise: NoiseSetting,
     biome_source: BiomeSourceSettings,
 }
 
-impl ChunkGenerator for NoiseGenerator {
+impl<W: World> ChunkGenerator for NoiseGenerator<W> {
     type PerlinNoise = GameNoise;
     type ChunkSettings = (BiomeSourceSettings, NameSpaceKeyOrType<NoiseSetting>);
-    type Chunk = AxolotlChunk;
-    type GameTy = AxolotlGame;
+    type Chunk = AxolotlChunk<W>;
+    type GameTy = AxolotlGame<W>;
 
-    fn new(game: Arc<AxolotlGame>, chunk_settings: Self::ChunkSettings) -> Self {
+    fn new(game: Arc<AxolotlGame<W>>, chunk_settings: Self::ChunkSettings) -> Self {
         let (biome_source, settings) = chunk_settings;
         let settings = match settings {
             NameSpaceKeyOrType::NameSpaceKey(key) => game

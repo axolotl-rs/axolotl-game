@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use axolotl_api::game::{Game, Registry};
 
+use axolotl_api::world::World;
 use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
@@ -28,17 +29,17 @@ use crate::world::level::noise::NoiseGenerator;
 use crate::world::perlin::GameNoise;
 
 #[derive(Debug)]
-pub enum AxolotlGenerator {
-    Flat(FlatGenerator),
-    Noise(NoiseGenerator),
+pub enum AxolotlGenerator<W: World> {
+    Flat(FlatGenerator<W>),
+    Noise(NoiseGenerator<W>),
     Debug(),
 }
 
-impl ChunkGenerator for AxolotlGenerator {
+impl<W: World> ChunkGenerator for AxolotlGenerator<W> {
     type PerlinNoise = GameNoise;
     type ChunkSettings = ChunkSettings;
-    type Chunk = AxolotlChunk;
-    type GameTy = AxolotlGame;
+    type Chunk = AxolotlChunk<W>;
+    type GameTy = AxolotlGame<W>;
 
     fn new(game: Arc<Self::GameTy>, chunk_settings: Self::ChunkSettings) -> Self {
         match chunk_settings {

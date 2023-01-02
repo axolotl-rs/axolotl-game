@@ -27,10 +27,10 @@ pub struct AxolotlVersion {
     pub protocol_version: i64,
     pub supported_versions: HashMap<String, SupportedVersion>,
 }
-
+///
 pub trait Game: Sized + Debug {
-    type World: World;
     type Biome: Biome;
+    type World: World;
     type Block: Block<Self>;
     type Item: Item<Self>;
     type ItemStack: ItemStack<Self>;
@@ -38,10 +38,6 @@ pub trait Game: Sized + Debug {
     type Registries: Registries<Self>;
     type DataRegistries: DataRegistries;
     type ChatType: ChatType;
-    fn create_placed_block(
-        &self,
-        block: Self::Block,
-    ) -> <<Self as Game>::World as World>::WorldBlock;
 
     fn registries(&self) -> &Self::Registries;
     fn mut_registries(&mut self) -> &mut Self::Registries;
