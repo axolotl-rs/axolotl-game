@@ -1,8 +1,9 @@
-use crate::blocks::generic_block::VanillaState;
+use std::fmt::Formatter;
 
 use serde::de::{MapAccess, Visitor};
 use serde::Deserialize;
-use std::fmt::Formatter;
+
+use crate::blocks::generic_block::VanillaState;
 
 #[derive(Debug)]
 pub struct RawState {

@@ -2,14 +2,40 @@
 
 extern crate core;
 
+use std::any::type_name;
+use std::collections::VecDeque;
+use std::fmt::{Debug, DebugStruct, Formatter};
+use std::marker::PhantomData;
+use std::mem;
+use std::path::{Path, PathBuf};
+
+use axolotl_nbt::serde_impl;
+//pub use crossbeam::channel::{bounded, unbounded, Receiver, Sender};
+use flume::Drain;
+pub use flume::{bounded, unbounded, Receiver, Sender};
+use log::{debug, info};
+use thiserror::Error;
+
+use axolotl_api::game::{AxolotlVersion, DataRegistries, Game, Registries, Registry};
+use axolotl_api::world::{BlockPosition, World};
+use axolotl_api::world_gen::biome::vanilla::DataPackBiome;
+use axolotl_api::world_gen::dimension::Dimension;
+use axolotl_api::world_gen::noise::{Noise, NoiseSetting};
+use axolotl_api::{NamespacedId, NamespacedKey};
+use axolotl_items::blocks::MinecraftBlock;
+use axolotl_items::items::MinecraftItem;
+use axolotl_world::level::MinecraftVersion;
+use registry::SimpleRegistry;
+
+use crate::chat::AxolotlChatType;
+use crate::item_stack::AxolotlItemStack;
+use crate::world::generator::AxolotlDensityLoader;
+use crate::world::perlin::GameNoise;
+
 pub mod chat;
 pub mod item_stack;
 pub mod registry;
 pub mod world;
-
-//pub use crossbeam::channel::{bounded, unbounded, Receiver, Sender};
-pub use flume::{bounded, unbounded, Receiver, Sender};
-use std::collections::VecDeque;
 
 pub struct ChunkPosSplit(i32, i32);
 
@@ -47,33 +73,7 @@ pub enum Error {
     JsonError(#[from] serde_json::Error),
 }
 
-use crate::world::generator::AxolotlDensityLoader;
-use crate::world::perlin::GameNoise;
-use axolotl_api::game::{AxolotlVersion, DataRegistries, Game, Registries, Registry};
-
-use axolotl_api::world_gen::biome::vanilla::DataPackBiome;
-
-use axolotl_api::world_gen::noise::{Noise, NoiseSetting};
-use axolotl_api::{NamespacedId, NamespacedKey};
-
-use axolotl_nbt::serde_impl;
-use flume::Drain;
 pub(crate) use get_type;
-use log::{debug, info};
-use std::fmt::{Debug, Formatter};
-use std::marker::PhantomData;
-use std::mem;
-use std::path::PathBuf;
-
-use crate::chat::AxolotlChatType;
-use crate::item_stack::AxolotlItemStack;
-use axolotl_api::world::{BlockPosition, World};
-use axolotl_api::world_gen::dimension::Dimension;
-use axolotl_items::blocks::MinecraftBlock;
-use axolotl_items::items::MinecraftItem;
-use axolotl_world::level::MinecraftVersion;
-use registry::SimpleRegistry;
-use thiserror::Error;
 
 const AXOLOTL_VERSION: &str = include_str!("axolotl-version.json");
 const MINECRAFT_VERSION: &str = include_str!("minecraft_version.json");
@@ -110,31 +110,7 @@ impl<W: World> AxolotlGame<W> {
                 "Data dump not found",
             )));
         }
-        let data_registries = AxolotlDataRegistries {
-            noises: SimpleRegistry::load_from_path(
-                config
-                    .data_dump
-                    .join("reports")
-                    .join("minecraft")
-                    .join("worldgen")
-                    .join("noise"),
-            )?,
-            noise_settings: SimpleRegistry::load_from_path(
-                config
-                    .data_dump
-                    .join("reports")
-                    .join("minecraft")
-                    .join("worldgen")
-                    .join("noise_settings"),
-            )?,
-            dimensions: SimpleRegistry::load_from_path(
-                config
-                    .data_dump
-                    .join("reports")
-                    .join("minecraft")
-                    .join("dimension_type"),
-            )?,
-        };
+        let data_registries = AxolotlDataRegistries::new(&config.data_dump)?;
         let density_loader = AxolotlDensityLoader(SimpleRegistry::load_from_path(
             config
                 .data_dump
@@ -143,40 +119,11 @@ impl<W: World> AxolotlGame<W> {
                 .join("worldgen")
                 .join("density_function"),
         )?);
-        let chat_types = SimpleRegistry::load_from_path(
-            config
-                .data_dump
-                .join("reports")
-                .join("minecraft")
-                .join("chat_type"),
-        )?;
-        let materials = axolotl_items::load_materials(config.axolotl_data.clone()).unwrap();
-        let mut block_registry = SimpleRegistry::new();
-        axolotl_items::load_blocks(
-            config.axolotl_data,
-            config.data_dump.clone(),
-            &materials,
-            &mut block_registry,
-        )
-        .unwrap();
-
-        let registries = AxolotlRegistries {
-            biomes: SimpleRegistry::load_from_path(
-                config
-                    .data_dump
-                    .join("reports")
-                    .join("minecraft")
-                    .join("worldgen")
-                    .join("biome"),
-            )?,
-            blocks: block_registry,
-            chat_types,
-        };
 
         // TODO: Load Data Packs
         Ok(Self {
             data_registries,
-            registries,
+            registries: AxolotlRegistries::new(&config.axolotl_data, &config.data_dump)?,
             density_loader,
             minecraft_version,
             axolotl_version,
@@ -192,11 +139,12 @@ impl<W: World> AxolotlGame<W> {
 }
 impl<W: World> Debug for AxolotlGame<W> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "AxolotlGame {:?} Minecraft Version {:?}",
-            self.axolotl_version, self.minecraft_version
-        )
+        f.debug_struct("AxolotlGame")
+            .field("axolotl_version", &self.axolotl_version.axolotl_version)
+            .field("minecraft_version", &self.minecraft_version.series)
+            .field("AxolotlRegistries", &self.registries)
+            .field("AxolotlDataRegistries", &self.data_registries)
+            .finish()
     }
 }
 impl<W: World> Game for AxolotlGame<W> {
@@ -231,6 +179,50 @@ pub struct AxolotlRegistries<W: World> {
     pub biomes: SimpleRegistry<DataPackBiome>,
     pub blocks: SimpleRegistry<MinecraftBlock<AxolotlGame<W>>>,
     pub chat_types: SimpleRegistry<AxolotlChatType>,
+}
+impl<W: World> Debug for AxolotlRegistries<W> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let name = type_name::<W>();
+        f.debug_struct("AxolotlRegistries")
+            .field("biomes", &self.biomes.values.len())
+            .field("blocks", &self.blocks.values.len())
+            .field("chat_types", &self.chat_types.values.len())
+            .field("World Type", &name)
+            .finish()
+    }
+}
+impl<W: World> AxolotlRegistries<W> {
+    fn new(axolotl_data: impl AsRef<Path>, data_dump: impl AsRef<Path>) -> Result<Self, Error> {
+        let chat_types = SimpleRegistry::load_from_path(
+            data_dump
+                .as_ref()
+                .join("reports")
+                .join("minecraft")
+                .join("chat_type"),
+        )?;
+        let materials = axolotl_items::load_materials(axolotl_data.as_ref().to_path_buf()).unwrap();
+        let mut block_registry = SimpleRegistry::new();
+        axolotl_items::load_blocks(
+            axolotl_data.as_ref().to_path_buf(),
+            data_dump.as_ref().to_path_buf(),
+            &materials,
+            &mut block_registry,
+        )
+        .unwrap();
+
+        Ok(AxolotlRegistries {
+            biomes: SimpleRegistry::load_from_path(
+                data_dump
+                    .as_ref()
+                    .join("reports")
+                    .join("minecraft")
+                    .join("worldgen")
+                    .join("biome"),
+            )?,
+            blocks: block_registry,
+            chat_types,
+        })
+    }
 }
 impl<W: World> Registries<AxolotlGame<W>> for AxolotlRegistries<W> {
     type BiomeRegistry = SimpleRegistry<DataPackBiome>;
@@ -275,6 +267,45 @@ pub struct AxolotlDataRegistries {
     pub noises: SimpleRegistry<Noise>,
     pub noise_settings: SimpleRegistry<NoiseSetting>,
     pub dimensions: SimpleRegistry<Dimension>,
+}
+impl Debug for AxolotlDataRegistries {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AxolotlDataRegistries")
+            .field("noises", &self.noises.values.len())
+            .field("noise_settings", &self.noise_settings.values.len())
+            .field("dimensions", &self.dimensions.values.len())
+            .finish()
+    }
+}
+impl AxolotlDataRegistries {
+    pub fn new(data_dump: impl AsRef<Path>) -> Result<Self, Error> {
+        let data_dump = data_dump.as_ref();
+        let noises = SimpleRegistry::load_from_path(
+            data_dump
+                .join("reports")
+                .join("minecraft")
+                .join("worldgen")
+                .join("noise"),
+        )?;
+        let noise_settings = SimpleRegistry::load_from_path(
+            data_dump
+                .join("reports")
+                .join("minecraft")
+                .join("worldgen")
+                .join("noise_settings"),
+        )?;
+        let dimensions = SimpleRegistry::load_from_path(
+            data_dump
+                .join("reports")
+                .join("minecraft")
+                .join("dimension_type"),
+        )?;
+        Ok(Self {
+            noises,
+            noise_settings,
+            dimensions,
+        })
+    }
 }
 impl DataRegistries for AxolotlDataRegistries {
     type NoiseRegistry = SimpleRegistry<Noise>;

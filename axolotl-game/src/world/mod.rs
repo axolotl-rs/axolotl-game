@@ -1,5 +1,6 @@
-use crate::world::chunk::placed_block::PlacedBlock;
 use axolotl_api::world::{BlockPosition, World};
+
+use crate::world::chunk::placed_block::PlacedBlock;
 
 pub mod chunk;
 pub mod entity;

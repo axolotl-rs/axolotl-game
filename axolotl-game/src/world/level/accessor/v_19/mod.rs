@@ -1,31 +1,31 @@
-pub mod player;
+use std::collections::VecDeque;
+use std::fs::OpenOptions;
+use std::io::BufReader;
+use std::path::PathBuf;
+use std::sync::Arc;
 
-use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter, RawChunk};
-use crate::Error::WorldError;
-use crate::{AxolotlGame, Error};
 use ahash::AHashMap;
-use axolotl_api::world::World;
-use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_nbt::serde_impl;
-use axolotl_world::entity::RawEntities;
-use axolotl_world::level;
-use axolotl_world::level::{DataPacks, LevelDat, MinecraftVersion, RootWrapper, WorldGenSettings};
-use axolotl_world::region::file::{RegionFile, RegionFileType};
-use axolotl_world::region::RegionHeader;
-use axolotl_world::world::axolotl::{AxolotlWorld as RawWorld, AxolotlWorldError};
-use axolotl_world::world::World as RawWorldTrait;
 use flate2::read::GzDecoder;
 use itoa::Buffer;
 use log::{debug, info, warn};
 use parking_lot::lock_api::{RawMutex, RwLockWriteGuard};
 use parking_lot::{Mutex, RawRwLock, RwLock};
-use serde_json::Value;
-use std::collections::VecDeque;
-use std::fs::OpenOptions;
-use std::io::BufReader;
-use std::path::PathBuf;
-use std::sync::atomic::AtomicU8;
-use std::sync::Arc;
+
+use axolotl_api::world::World;
+use axolotl_api::world_gen::chunk::ChunkPos;
+use axolotl_world::entity::RawEntities;
+use axolotl_world::level;
+use axolotl_world::level::{DataPacks, LevelDat, MinecraftVersion, RootWrapper, WorldGenSettings};
+use axolotl_world::region::file::{RegionFile, RegionFileType};
+use axolotl_world::region::RegionHeader;
+use axolotl_world::world::axolotl::AxolotlWorld as RawWorld;
+use axolotl_world::world::World as RawWorldTrait;
+
+use crate::world::level::accessor::{IntoRawChunk, LevelReader, LevelWriter, RawChunk};
+use crate::{AxolotlGame, Error};
+
+pub mod player;
 
 pub const MAX_NUMBER_OPEN_REGIONS: usize = 16;
 #[derive(Debug)]

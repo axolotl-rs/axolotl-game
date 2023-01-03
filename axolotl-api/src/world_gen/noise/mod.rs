@@ -7,9 +7,9 @@ use std::sync::Arc;
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::game::Game;
 pub use min_max::MinMax;
 
+use crate::game::Game;
 use crate::world_gen::noise::density::loading::DensityLoader;
 use crate::world_gen::noise::density::perlin::Perlin;
 use crate::OwnedNameSpaceKey;

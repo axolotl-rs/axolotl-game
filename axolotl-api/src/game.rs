@@ -1,18 +1,19 @@
+use std::collections::HashMap;
+use std::fmt::Debug;
+
+use paste::paste;
+use serde::{Deserialize, Serialize};
+
 use crate::chat::ChatType;
 use crate::item::block::Block;
 use crate::item::{Item, ItemStack};
 use crate::world::World;
 use crate::world_gen::biome::Biome;
-use crate::{NamespacedKey, OwnedNameSpaceKey};
-use paste::paste;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fmt::Debug;
-
 use crate::world_gen::dimension::Dimension;
 use crate::world_gen::noise::density::loading::DensityLoader;
 use crate::world_gen::noise::density::perlin::Perlin;
 use crate::world_gen::noise::{Noise, NoiseSetting};
+use crate::OwnedNameSpaceKey;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SupportedVersion {

@@ -1,5 +1,3 @@
-use num_traits::{Num, One, Zero};
-use std::ops::{Add, Div, Mul, Sub, SubAssign};
 pub fn binary_search<N, Test>(array: &Vec<N>, test: Test) -> usize
 where
     Test: Fn(&N) -> bool,

@@ -1,11 +1,14 @@
-use crate::get_type;
-use axolotl_api::world_gen::noise::BiomeSource;
-use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
+use std::fmt;
+use std::fmt::Formatter;
+
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt;
-use std::fmt::Formatter;
+
+use axolotl_api::world_gen::noise::BiomeSource;
+use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
+
+use crate::get_type;
 
 pub enum AxolotlBiomeSource {
     MultiNoise {},

@@ -7,6 +7,9 @@ use std::hash::Hash;
 use std::str::FromStr;
 use std::sync::Arc;
 
+pub use axolotl_types::{
+    BadNamespacedKeyError, NameSpaceKey, NameSpaceRef, NamespacedKey, OwnedNameSpaceKey,
+};
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 
@@ -23,10 +26,6 @@ pub mod name;
 pub mod player;
 pub mod world;
 pub mod world_gen;
-
-pub use axolotl_types::{
-    BadNamespacedKeyError, NameSpaceKey, NameSpaceRef, NamespacedKey, OwnedNameSpaceKey,
-};
 
 pub trait NumericId {
     fn id(&self) -> usize;

@@ -1,17 +1,18 @@
-use crate::region::{ChunkHeader, CompressionType, RegionHeader, RegionLocation};
-use crate::Error;
-use axolotl_nbt::binary::Binary;
-use axolotl_nbt::serde_impl;
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use flate2::read::{GzDecoder, ZlibDecoder};
-
-use flate2::write::ZlibEncoder;
-use flate2::Compression;
-use serde::Serialize;
 use std::fmt::Debug;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
+
+use axolotl_nbt::binary::Binary;
+use axolotl_nbt::serde_impl;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use flate2::read::{GzDecoder, ZlibDecoder};
+use flate2::write::ZlibEncoder;
+use flate2::Compression;
+use serde::Serialize;
+
+use crate::region::{ChunkHeader, CompressionType, RegionHeader, RegionLocation};
+use crate::Error;
 
 pub trait RegionFileType:
     for<'de> serde::Deserialize<'de> + serde::Serialize + Debug + Clone

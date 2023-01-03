@@ -1,8 +1,9 @@
-use crate::blocks::MinecraftBlock;
 use axolotl_api::events::{Event, EventHandler};
 use axolotl_api::game::Game;
 use axolotl_api::item::{Item, ItemLeftClick, ItemType};
 use axolotl_api::{NamespacedId, NumericId};
+
+use crate::blocks::MinecraftBlock;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockItem<G: Game> {

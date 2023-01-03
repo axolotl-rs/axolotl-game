@@ -1,13 +1,16 @@
-use crate::world::chunk::biome_section::AxolotlBiomeSection;
-use crate::world::chunk::blocks_section::AxolotlBlockSection;
-use crate::world::chunk::consts::{SECTION_X_SIZE, SECTION_Y_SIZE, SECTION_Z_SIZE};
+use std::fmt::{Debug, Formatter};
+
+use bytemuck::{Pod, Zeroable};
+use thiserror::Error;
+
 use axolotl_api::world::{BlockPosition, World};
 use axolotl_api::OwnedNameSpaceKey;
 use axolotl_world::chunk::compact_array::CompactArrayIndex;
 use axolotl_world::chunk::ChunkSection;
-use bytemuck::{Pod, Zeroable};
-use std::fmt::{Debug, Formatter};
-use thiserror::Error;
+
+use crate::world::chunk::biome_section::AxolotlBiomeSection;
+use crate::world::chunk::blocks_section::AxolotlBlockSection;
+use crate::world::chunk::consts::{SECTION_X_SIZE, SECTION_Y_SIZE, SECTION_Z_SIZE};
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash, Zeroable, Pod)]
 #[repr(transparent)]

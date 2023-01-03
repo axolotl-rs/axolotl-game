@@ -1,17 +1,19 @@
-use crate::blocks::raw_state::RawState;
+use std::borrow::Cow;
+use std::fmt::Formatter;
+use std::sync::Arc;
+
 use ahash::{AHashMap, HashMap};
+use axolotl_data_rs::blocks::{Block as RawBlock, Material};
+use serde::de::{MapAccess, Visitor};
+use serde::Deserialize;
+
 use axolotl_api::events::{EventHandler, NoError};
 use axolotl_api::game::Game;
 use axolotl_api::item::block::{Block, BlockPlaceEvent, BlockState, BlockStateValue};
 use axolotl_api::item::ItemType;
 use axolotl_api::{NamespacedId, NumericId};
-use axolotl_data_rs::blocks::{Block as RawBlock, Material};
 
-use serde::de::{MapAccess, Visitor};
-use serde::Deserialize;
-use std::borrow::Cow;
-use std::fmt::Formatter;
-use std::sync::Arc;
+use crate::blocks::raw_state::RawState;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum DropType {

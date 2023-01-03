@@ -1,8 +1,9 @@
+use std::fs::{remove_file, OpenOptions};
+use std::path::PathBuf;
+
 use axolotl_world::chunk::RawChunk;
 use axolotl_world::region::file::RegionFile;
 use axolotl_world::region::RegionHeader;
-use std::fs::{remove_file, OpenOptions};
-use std::path::PathBuf;
 
 #[test]
 pub fn test() {

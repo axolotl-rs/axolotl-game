@@ -1,11 +1,13 @@
-use crate::level::LevelDat;
-use axolotl_nbt::{serde_impl, NBTError};
-use flate2::read::GzDecoder;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
+
+use axolotl_nbt::{serde_impl, NBTError};
+use flate2::read::GzDecoder;
 use thiserror::Error;
+
+use crate::level::LevelDat;
 
 pub mod chunk;
 pub mod entity;

@@ -1,8 +1,9 @@
-use crate::world::chunk::section::SectionPosIndex;
-use axolotl_api::world::BlockPosition;
+use std::mem::discriminant;
+
 use axolotl_api::OwnedNameSpaceKey;
 use axolotl_world::chunk::compact_array::CompactArray;
-use std::mem::discriminant;
+
+use crate::world::chunk::section::SectionPosIndex;
 
 #[derive(Debug, Clone)]
 pub enum AxolotlBiomeSection {

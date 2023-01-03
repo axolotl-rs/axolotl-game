@@ -1,13 +1,15 @@
-use crate::world::generator::ChunkSettings;
-use axolotl_api::OwnedNameSpaceKey;
-use serde::de::MapAccess;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
-use uuid::Uuid;
+
+use serde::de::MapAccess;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use axolotl_api::OwnedNameSpaceKey;
+
+use crate::world::generator::ChunkSettings;
+
 /// This is the default config for worlds. This is to make a vanilla like feel to the game.
 pub static DEFAULT_VANILLA_CONFIG: &str = include_str!("vanilla.worldconfig.json");
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -120,6 +122,7 @@ pub trait WorldGroupAccessor {
 #[cfg(test)]
 mod tests {
     use crate::world::level::configs::DEFAULT_VANILLA_CONFIG;
+
     #[test]
     pub fn test_load() {
         let config: super::WorldsConfig = serde_json::from_str(DEFAULT_VANILLA_CONFIG).unwrap();

@@ -1,10 +1,10 @@
+use std::fmt::Debug;
+
+use auto_impl::auto_impl;
+
 use crate::events::{Event, EventHandler};
 use crate::game::Game;
-use crate::{NameSpaceRef, NamespacedKey, NumericId};
-use auto_impl::auto_impl;
-use std::borrow::Cow;
-use std::fmt::Debug;
-use std::sync::Arc;
+use crate::{NamespacedKey, NumericId};
 
 pub mod block;
 pub mod recipes;

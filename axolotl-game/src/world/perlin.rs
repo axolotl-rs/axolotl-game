@@ -1,9 +1,9 @@
-use axolotl_api::world_gen::noise::density::perlin::Perlin;
 use axolotl_noise::minecraft::random::xoroshiro::rand_xoshiro::Xoroshiro128PlusPlus;
 use axolotl_noise::minecraft::random::xoroshiro::MinecraftXoroshiro128;
 use axolotl_noise::minecraft::MinecraftPerlin;
 use rand::SeedableRng;
 
+use axolotl_api::world_gen::noise::density::perlin::Perlin;
 use axolotl_api::world_gen::noise::Noise;
 
 #[derive(Debug, Clone)]

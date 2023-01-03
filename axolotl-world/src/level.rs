@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 use axolotl_nbt::value::NameLessValue;
 use axolotl_types::OwnedNameSpaceKey;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RootWrapper {
     #[serde(rename = "Data")]

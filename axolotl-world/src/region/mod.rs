@@ -1,7 +1,9 @@
-use crate::Error;
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::fmt::Debug;
 use std::io::{Read, Write};
+
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::Error;
 
 pub mod file;
 

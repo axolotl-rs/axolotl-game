@@ -1,13 +1,16 @@
-use crate::blocks::generic_block::{BlockProperties, VanillaState};
-use crate::blocks::raw_state::RawState;
+use std::sync::Arc;
+
 use ahash::HashMap;
+use axolotl_data_rs::blocks::{Block as RawBlock, Material};
+
 use axolotl_api::events::{Event, EventHandler};
 use axolotl_api::game::Game;
 use axolotl_api::item::block::{Block, BlockPlaceEvent};
 use axolotl_api::item::ItemType;
 use axolotl_api::{NamespacedId, NumericId};
-use axolotl_data_rs::blocks::{Block as RawBlock, Material};
-use std::sync::Arc;
+
+use crate::blocks::generic_block::{BlockProperties, VanillaState};
+use crate::blocks::raw_state::RawState;
 
 #[derive(Debug, Clone)]
 pub struct BedBlock {

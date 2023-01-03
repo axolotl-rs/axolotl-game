@@ -1,18 +1,18 @@
-pub mod axolotl;
-pub mod bukkit;
-pub mod vanilla;
-
-use crate::entity::player::PlayerData;
+use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::Debug;
+use std::path::PathBuf;
 
 use axolotl_types::OwnedNameSpaceKey;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::Debug;
-
-use std::path::PathBuf;
 use uuid::Uuid;
+
+use crate::entity::player::PlayerData;
+
+pub mod axolotl;
+pub mod bukkit;
+pub mod vanilla;
 
 pub trait World {
     type Error: Error;

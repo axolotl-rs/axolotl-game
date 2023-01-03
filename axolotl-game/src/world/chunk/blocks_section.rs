@@ -1,20 +1,22 @@
-use crate::world::chunk::consts::{
-    BITS_PER_BLOCK, LONGS_PER_BLOC_SECTION, SECTION_SIZE, SECTION_X_SIZE, SECTION_Y_SIZE,
-    SECTION_Z_SIZE,
-};
-use crate::world::chunk::placed_block::PlacedBlock;
-use crate::world::chunk::section::{InvalidChunkSection, SectionPosIndex};
+use std::mem;
+use std::mem::discriminant;
 
-use crate::AxolotlGame;
+use log::warn;
+
 use axolotl_api::item::block::Block;
 use axolotl_api::world::World;
 use axolotl_api::{NameSpaceRef, OwnedNameSpaceKey};
 use axolotl_items::blocks::InnerMinecraftBlock;
 use axolotl_world::chunk::compact_array::CompactArray;
 use axolotl_world::chunk::{BlockStates, PaletteItem};
-use log::{debug, info, warn};
-use std::mem;
-use std::mem::discriminant;
+
+use crate::world::chunk::consts::{
+    BITS_PER_BLOCK, LONGS_PER_BLOC_SECTION, SECTION_SIZE, SECTION_X_SIZE, SECTION_Y_SIZE,
+    SECTION_Z_SIZE,
+};
+use crate::world::chunk::placed_block::PlacedBlock;
+use crate::world::chunk::section::{InvalidChunkSection, SectionPosIndex};
+use crate::AxolotlGame;
 
 /// Returns Err(()) if block is outside of the range
 #[derive(Debug, Default)]

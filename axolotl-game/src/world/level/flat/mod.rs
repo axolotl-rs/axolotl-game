@@ -1,16 +1,19 @@
-use crate::world::chunk::placed_block::PlacedBlock;
-use crate::world::chunk::AxolotlChunk;
-use crate::world::perlin::GameNoise;
-use crate::AxolotlGame;
+use std::sync::Arc;
+
+use log::warn;
+use serde::{Deserialize, Serialize};
+
 use axolotl_api::game::{Game, Registry};
 use axolotl_api::world::{BlockPosition, World};
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_api::world_gen::noise::ChunkGenerator;
-use axolotl_api::NamespacedId;
 use axolotl_items::blocks::MinecraftBlock;
-use log::{debug, warn};
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+
+use crate::world::chunk::placed_block::PlacedBlock;
+use crate::world::chunk::AxolotlChunk;
+use crate::world::perlin::GameNoise;
+use crate::AxolotlGame;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Layer {
     pub block: String,

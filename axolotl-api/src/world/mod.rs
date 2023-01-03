@@ -1,8 +1,7 @@
-use bytemuck::{Pod, Zeroable};
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use uuid::Uuid;
+use bytemuck::{Pod, Zeroable};
 
 pub use location::GenericLocation;
 pub use location::Location;

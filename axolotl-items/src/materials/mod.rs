@@ -1,4 +1,5 @@
 use ahash::AHashMap;
+
 #[derive(Debug, Clone)]
 pub struct BlockMaterial {
     // Ex "wool", "leaves;mineable/axe;mineable/hoe"

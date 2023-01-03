@@ -1,8 +1,9 @@
+use std::marker::PhantomData;
+
 use crate::game::Game;
 use crate::world_gen::noise::density::perlin::Perlin;
 use crate::world_gen::noise::density::{DensityContext, DensityFunction, DensityState};
 use crate::world_gen::noise::Noise;
-use std::marker::PhantomData;
 
 ///https://minecraft.fandom.com/wiki/Density_function#interpolated
 #[derive(Debug, Clone)]

@@ -1,10 +1,10 @@
-use crate::AxolotlGame;
-
 use axolotl_api::world::World;
 use axolotl_api::{NamespacedId, NumericId, OwnedNameSpaceKey};
 use axolotl_items::blocks::generic_block::VanillaStateIdOrValue;
 use axolotl_items::blocks::{InnerMinecraftBlock, MinecraftBlock};
 use axolotl_world::chunk::PaletteItem;
+
+use crate::AxolotlGame;
 
 #[derive(Debug, PartialEq)]
 pub struct PlacedBlock<W: World> {

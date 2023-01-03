@@ -4,8 +4,6 @@ use rand::{Rng, SeedableRng};
 
 pub use holder::NoiseHolder;
 
-use crate::world_gen::noise::NoiseSetting;
-
 mod holder;
 
 pub trait Perlin: Debug + Clone {

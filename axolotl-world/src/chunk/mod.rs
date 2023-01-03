@@ -1,13 +1,13 @@
-use crate::region::file::RegionFileType;
+use std::collections::HashMap;
+use std::fmt::Formatter;
+use std::str::FromStr;
 
 use axolotl_types::{BadNamespacedKeyError, OwnedNameSpaceKey};
 use serde::de::{Error, Visitor};
-use serde::{Deserialize, Serialize, Serializer};
-use std::collections::HashMap;
-use std::fmt::Formatter;
-
 use serde::ser::SerializeStruct;
-use std::str::FromStr;
+use serde::{Deserialize, Serialize, Serializer};
+
+use crate::region::file::RegionFileType;
 
 pub mod compact_array;
 

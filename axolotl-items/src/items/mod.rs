@@ -1,11 +1,12 @@
-pub mod block_item;
+use std::sync::Arc;
 
 use axolotl_api::events::{Event, EventHandler};
 use axolotl_api::game::Game;
 use axolotl_api::item::{Item, ItemLeftClick, ItemType};
 use axolotl_api::NumericId;
 use block_item::BlockItem;
-use std::sync::Arc;
+
+pub mod block_item;
 
 pub type MinecraftItem<G> = Arc<InnerMinecraftItem<G>>;
 

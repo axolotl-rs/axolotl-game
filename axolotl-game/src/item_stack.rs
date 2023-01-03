@@ -1,8 +1,8 @@
-use crate::AxolotlGame;
-
 use axolotl_api::item::ItemStack;
 use axolotl_api::world::World;
 use axolotl_items::items::MinecraftItem;
+
+use crate::AxolotlGame;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct AxolotlItemStack<W: World> {

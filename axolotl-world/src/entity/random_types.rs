@@ -1,9 +1,11 @@
-use crate::item::Item;
+use std::collections::HashMap;
+
 use axolotl_nbt::axolotl_nbt_macros::ListSerialize;
 use axolotl_nbt::value::Value;
 use axolotl_types::OwnedNameSpaceKey;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
+
+use crate::item::Item;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Brain {

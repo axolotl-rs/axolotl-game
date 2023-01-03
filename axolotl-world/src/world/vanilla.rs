@@ -1,10 +1,11 @@
-use crate::level::LevelDat;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 use axolotl_nbt::serde_impl;
 use axolotl_types::OwnedNameSpaceKey;
-use std::collections::HashMap;
-use std::path::PathBuf;
 use thiserror::Error;
+
+use crate::level::LevelDat;
 
 #[derive(Debug, Error)]
 pub enum VanillaWorldError {

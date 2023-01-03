@@ -1,17 +1,16 @@
-use crate::world::chunk::AxolotlChunk;
+use std::sync::Arc;
 
-use crate::world::level::biome_source::BiomeSourceSettings;
-use crate::{AxolotlGame, GameNoise};
+use log::warn;
 
 use axolotl_api::game::{DataRegistries, Game, Registry};
-
+use axolotl_api::world::World;
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_api::world_gen::noise::density::DensityContext;
 use axolotl_api::world_gen::noise::{ChunkGenerator, NameSpaceKeyOrType, NoiseSetting};
-use log::warn;
 
-use axolotl_api::world::World;
-use std::sync::Arc;
+use crate::world::chunk::AxolotlChunk;
+use crate::world::level::biome_source::BiomeSourceSettings;
+use crate::{AxolotlGame, GameNoise};
 
 pub struct ChunkContext {
     pub chunk_x: i32,

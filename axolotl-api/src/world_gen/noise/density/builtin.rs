@@ -103,6 +103,8 @@ define_simple_function!(squeeze, value {
 });
 
 pub mod one_param {
+    use axolotl_types::NamespacedKey;
+
     use crate::game::Game;
     use crate::world_gen::noise::density::builtin::{
         abs, cube, half_negative, quarter_negative, square, squeeze,
@@ -113,7 +115,6 @@ pub mod one_param {
         BuildDefResult, DensityContext, DensityFunction, DensityState, Function,
     };
     use crate::world_gen::noise::Noise;
-    use axolotl_types::NamespacedKey;
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum OneArgBuiltInFunctionType {
@@ -217,10 +218,9 @@ pub mod one_param {
 }
 
 pub mod two_param {
-    use axolotl_types::NamespacedKey;
     use std::borrow::Cow;
 
-    use serde_json::Value;
+    use axolotl_types::NamespacedKey;
 
     use crate::game::Game;
     use crate::world_gen::noise::density::builtin::{add, max, min, mul};

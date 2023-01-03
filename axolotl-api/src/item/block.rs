@@ -1,19 +1,16 @@
+use std::borrow::Cow;
+use std::fmt::{Debug, Formatter};
+
 use auto_impl::auto_impl;
-use axolotl_types::NamespacedKey;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer};
-use serde_json::ser::State;
-use std::borrow::Cow;
-use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
 
 use crate::events::{Event, EventHandler, NoError};
 use crate::game::Game;
-use crate::item::{Item, ItemType};
-use crate::world::{BlockPosition, GenericLocation, World, WorldLocation};
-use crate::world_gen::noise::ChunkGenerator;
-use crate::{NameSpaceRef, NamespacedId, NumericId};
+use crate::item::ItemType;
+use crate::world::BlockPosition;
+use crate::{NamespacedId, NumericId};
+
 /// A Generic Block State Type
 #[derive(Debug, Clone, PartialEq)]
 pub enum BlockStateValue {

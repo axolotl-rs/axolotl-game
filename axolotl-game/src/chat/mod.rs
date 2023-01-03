@@ -1,8 +1,10 @@
-use axolotl_api::chat::{ChatType, ChatTypeDecoration};
-use axolotl_api::data::{ForPacket, GenericPacketVersion, PacketVersion};
-use axolotl_api::{NameSpaceKey, OwnedNameSpaceKey};
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
+
+use serde::{Deserialize, Serialize};
+
+use axolotl_api::chat::{ChatType, ChatTypeDecoration};
+use axolotl_api::data::{ForPacket, GenericPacketVersion};
+use axolotl_api::NameSpaceKey;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AxolotlChatType {

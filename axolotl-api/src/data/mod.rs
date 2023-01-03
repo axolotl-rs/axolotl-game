@@ -1,10 +1,12 @@
-use crate::chat::ChatType;
+use std::borrow::Cow;
+
+use axolotl_types::NameSpaceKey;
+use serde::{Serialize, Serializer};
+
 use crate::world_gen::biome::vanilla::{BiomePacket, VanillaPrecipitation};
 use crate::world_gen::biome::Biome;
 use crate::world_gen::dimension::Dimension;
-use axolotl_types::{NameSpaceKey, OwnedNameSpaceKey};
-use serde::{Serialize, Serializer};
-use std::borrow::Cow;
+
 pub trait PacketVersion: Serialize {
     fn id(&self) -> &usize;
 }

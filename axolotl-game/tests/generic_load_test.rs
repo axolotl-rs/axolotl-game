@@ -1,14 +1,14 @@
+use std::path::PathBuf;
+use std::sync::Arc;
+
 use axolotl_api::world::{BlockPosition, World};
 use axolotl_api::world_gen::chunk::ChunkPos;
 use axolotl_api::world_gen::noise::ChunkGenerator;
 use axolotl_game::world::chunk::placed_block::PlacedBlock;
 use axolotl_game::world::chunk::AxolotlChunk;
 use axolotl_game::world::generator::AxolotlGenerator;
-use axolotl_game::world::level::noise::NoiseGenerator;
 use axolotl_game::GameConfig;
-use log::{error, info};
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct TestWorld {}
 impl World for TestWorld {
@@ -58,4 +58,6 @@ pub fn load_game() {
     let game = axolotl_game::AxolotlGame::<TestWorld>::load(config)
         .map(Arc::new)
         .unwrap();
+
+    println!("{:#?}", game);
 }

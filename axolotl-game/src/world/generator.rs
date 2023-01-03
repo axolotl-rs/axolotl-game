@@ -1,32 +1,28 @@
-use axolotl_nbt::value::Value;
-use axolotl_noise::minecraft::random::xoroshiro::MinecraftXoroshiro128;
-use log::warn;
 use std::collections::HashMap;
-use std::fmt;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::sync::Arc;
 
-use axolotl_api::game::{Game, Registry};
-
-use axolotl_api::world::World;
-use axolotl_api::{NamespacedKey, OwnedNameSpaceKey};
+use axolotl_noise::minecraft::random::xoroshiro::MinecraftXoroshiro128;
+use log::warn;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::registry::SimpleRegistry;
-use crate::{get_type, AxolotlGame};
+use axolotl_api::game::{Game, Registry};
+use axolotl_api::world::World;
 use axolotl_api::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
 use axolotl_api::world_gen::noise::density::perlin::Perlin;
 use axolotl_api::world_gen::noise::density::{DensityState, Function};
 use axolotl_api::world_gen::noise::{ChunkGenerator, NameSpaceKeyOrType, Noise, NoiseSetting};
-use axolotl_world::level::WorldGenSettings;
+use axolotl_api::OwnedNameSpaceKey;
 
+use crate::registry::SimpleRegistry;
 use crate::world::chunk::AxolotlChunk;
 use crate::world::level::biome_source::BiomeSourceSettings;
 use crate::world::level::flat::{FlatGenerator, FlatSettings};
 use crate::world::level::noise::NoiseGenerator;
 use crate::world::perlin::GameNoise;
+use crate::AxolotlGame;
 
 #[derive(Debug)]
 pub enum AxolotlGenerator<W: World> {
@@ -73,8 +69,10 @@ impl<W: World> ChunkGenerator for AxolotlGenerator<W> {
     }
 }
 
+/// This setting will only be used during loading. So large values are fine.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
+#[allow(clippy::large_enum_variant)]
 pub enum ChunkSettings {
     #[serde(rename = "minecraft:flat")]
     Flat { settings: FlatSettings },

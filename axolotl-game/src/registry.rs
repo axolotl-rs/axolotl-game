@@ -1,16 +1,16 @@
-use crate::Error;
+use std::path::Path;
+
 use ahash::AHashMap;
-use axolotl_api::data::{ForPacket, PacketVersion};
-use axolotl_api::game::Registry;
-use axolotl_api::{NameSpaceKey, NameSpaceRef, OwnedNameSpaceKey};
-use axolotl_nbt::binary::Binary;
-use axolotl_nbt::{serde_impl, NBTDataType, NBTType, Tag};
 use log::warn;
 use serde::de::DeserializeOwned;
 use serde::ser::SerializeMap;
 use serde::Serialize;
-use std::borrow::Cow;
-use std::path::Path;
+
+use axolotl_api::data::{ForPacket, PacketVersion};
+use axolotl_api::game::Registry;
+use axolotl_api::{NameSpaceKey, NameSpaceRef};
+
+use crate::Error;
 
 #[derive(Debug, Serialize)]
 pub struct SerializeRegistry<'registry, T: Serialize> {

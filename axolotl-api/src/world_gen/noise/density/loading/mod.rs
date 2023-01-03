@@ -1,15 +1,19 @@
-use crate::world_gen::noise::density::spline::Spline;
-use crate::world_gen::noise::{BiomeSource, NameSpaceKeyOrType, Noise, NoiseSetting};
-use crate::{NamespacedKey, OwnedNameSpaceKey};
-use serde::de::{Error, MapAccess, Visitor};
-use serde::{Deserialize, Deserializer};
-use serde_json::Value;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
+
+use serde::de::{Error, MapAccess, Visitor};
+use serde::{Deserialize, Deserializer};
 #[cfg(feature = "tabled")]
 use tabled::Tabled;
+
+use crate::game::Game;
+use crate::world_gen::noise::density::perlin::Perlin;
+use crate::world_gen::noise::density::spline::Spline;
+use crate::world_gen::noise::density::Function;
+use crate::world_gen::noise::{BiomeSource, NameSpaceKeyOrType, Noise};
+use crate::{NamespacedKey, OwnedNameSpaceKey};
 
 macro_rules! get_constant {
     ($arguments:ident, $name:literal) => {
@@ -46,9 +50,6 @@ macro_rules! get_noise {
         }
     };
 }
-use crate::game::Game;
-use crate::world_gen::noise::density::perlin::Perlin;
-use crate::world_gen::noise::density::Function;
 pub(crate) use get_noise;
 
 pub trait DensityLoader {
@@ -224,9 +225,10 @@ impl<'de> Deserialize<'de> for FunctionArgument {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::world_gen::noise::density::loading::FunctionArgument;
     use std::fs::{read_dir, read_to_string};
     use std::path::PathBuf;
+
+    use crate::world_gen::noise::density::loading::FunctionArgument;
 
     #[test]
     pub fn test() {

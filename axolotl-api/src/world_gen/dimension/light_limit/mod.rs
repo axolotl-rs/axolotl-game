@@ -1,8 +1,10 @@
-use crate::world_gen::dimension::MonsterSpawnLightLevel;
+use std::fmt::Formatter;
+
 use serde::de::{Error, MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
-use std::fmt::Formatter;
+
+use crate::world_gen::dimension::MonsterSpawnLightLevel;
 
 pub struct MonsterSpawnLightLevelVisitor;
 impl<'de> Visitor<'de> for MonsterSpawnLightLevelVisitor {

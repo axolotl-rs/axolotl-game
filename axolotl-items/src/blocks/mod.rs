@@ -1,22 +1,21 @@
-pub mod generic_block;
-pub(crate) mod raw_state;
-pub mod v19;
-
-use axolotl_api::item::block::{Block, BlockPlaceEvent};
-use axolotl_api::item::ItemType;
-
-use axolotl_api::{NamespacedId, NumericId};
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use crate::blocks::generic_block::VanillaState;
-
 use axolotl_api::events::{EventHandler, NoError};
 use axolotl_api::game::Game;
+use axolotl_api::item::block::{Block, BlockPlaceEvent};
+use axolotl_api::item::ItemType;
+use axolotl_api::{NamespacedId, NumericId};
 use generic_block::GenericBlock;
 
-pub type MinecraftBlock<G: Game> = Arc<InnerMinecraftBlock<G>>;
+use crate::blocks::generic_block::VanillaState;
+
+pub mod generic_block;
+pub(crate) mod raw_state;
+pub mod v19;
+
+pub type MinecraftBlock<G> = Arc<InnerMinecraftBlock<G>>;
 
 #[derive(Debug)]
 pub enum InnerMinecraftBlock<G: Game> {
@@ -71,10 +70,7 @@ impl<G: Game> EventHandler<BlockPlaceEvent<'_, G>> for InnerMinecraftBlock<G> {
     fn handle(&self, event: BlockPlaceEvent<G>) -> Result<bool, NoError> {
         match self {
             InnerMinecraftBlock::GenericBlock(block) => block.handle(event),
-            InnerMinecraftBlock::DynamicBlock(b) => {
-                // TODO
-                Ok(true)
-            }
+            InnerMinecraftBlock::DynamicBlock(b) => b.handle(event),
             _ => {
                 Ok(false) //??? Can't place air but it shouldnt be called
             }

@@ -1,5 +1,8 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+
 use crate::game::Game;
-use crate::world_gen::chunk::{into_condensed_location, into_condensed_location_i32};
+use crate::world_gen::chunk::into_condensed_location_i32;
 use crate::world_gen::noise::density::cache::AtomicF64;
 use crate::world_gen::noise::density::loading::{DensityLoader, FunctionArgument};
 use crate::world_gen::noise::density::perlin::Perlin;
@@ -8,8 +11,6 @@ use crate::world_gen::noise::density::{
 };
 use crate::world_gen::noise::Noise;
 use crate::NamespacedKey;
-use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
-use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct TwoDCache<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> {

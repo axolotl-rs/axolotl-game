@@ -6,7 +6,6 @@ use crate::world_gen::noise::density::{
 };
 use crate::world_gen::noise::Noise;
 use crate::NamespacedKey;
-use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
 pub struct FlatCache<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> {

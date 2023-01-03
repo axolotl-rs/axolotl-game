@@ -2,7 +2,6 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use crate::game::{DataRegistries, Game, Registry};
-use crate::world_gen::dimension::MonsterSpawnLightLevel;
 use crate::world_gen::noise::density::groups::{define_group, define_group_def};
 use crate::world_gen::noise::density::loading::{
     get_constant, get_noise, DensityLoader, FunctionArgument,
@@ -12,7 +11,8 @@ use crate::world_gen::noise::density::{
     BuildDefResult, DensityContext, DensityFunction, DensityState, Function,
 };
 use crate::world_gen::noise::{NameSpaceKeyOrType, Noise};
-use crate::{NamespacedKey, OwnedNameSpaceKey};
+use crate::NamespacedKey;
+
 macro_rules! define_as_noise {
     ($tp:tt,$sel:ident $get_perlin:block, $sel_two:ident $get_noise:block) => {
         impl<'function, P: Perlin<Noise = Noise, Seed = [u8; 16]>> NoiseFunction<'function, P>
