@@ -3,7 +3,7 @@ use std::mem::discriminant;
 use axolotl_api::OwnedNameSpaceKey;
 use axolotl_world::chunk::compact_array::CompactArray;
 
-use crate::world::chunk::section::SectionPosIndex;
+use crate::world::chunk::sections::SectionPosIndex;
 
 #[derive(Debug, Clone)]
 pub enum AxolotlBiomeSection {

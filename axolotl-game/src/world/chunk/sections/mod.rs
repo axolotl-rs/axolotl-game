@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Formatter};
+use std::io::Write;
 
 use bytemuck::{Pod, Zeroable};
 use thiserror::Error;
@@ -8,9 +9,50 @@ use axolotl_api::OwnedNameSpaceKey;
 use axolotl_world::chunk::compact_array::CompactArrayIndex;
 use axolotl_world::chunk::ChunkSection;
 
-use crate::world::chunk::biome_section::AxolotlBiomeSection;
-use crate::world::chunk::blocks_section::AxolotlBlockSection;
+use crate::world::chunk::consts;
 use crate::world::chunk::consts::{SECTION_X_SIZE, SECTION_Y_SIZE, SECTION_Z_SIZE};
+use crate::world::chunk::sections::biome_section::AxolotlBiomeSection;
+use crate::world::chunk::sections::blocks_section::AxolotlBlockSection;
+
+pub mod biome_section;
+pub mod blocks_section;
+
+type InnerSections<W> = [AxolotlChunkSection<W>; (consts::Y_SIZE / consts::SECTION_Y_SIZE)];
+
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct Sections<W: World>(pub(crate) InnerSections<W>);
+impl<W: World> Clone for Sections<W> {
+    fn clone(&self) -> Self {
+        Sections(self.0.clone())
+    }
+}
+
+impl<W: World> Default for Sections<W> {
+    fn default() -> Self {
+        let mut sections: InnerSections<W> = Default::default();
+        for index in consts::MIN_Y_SECTION..consts::MAX_Y_SECTION {
+            let section = &mut sections[(index + 4) as usize];
+            section.y = index;
+        }
+        Sections(sections)
+    }
+}
+impl<W: World> AsMut<InnerSections<W>> for Sections<W> {
+    fn as_mut(&mut self) -> &mut InnerSections<W> {
+        &mut self.0
+    }
+}
+impl<W: World> AsRef<InnerSections<W>> for Sections<W> {
+    fn as_ref(&self) -> &InnerSections<W> {
+        &self.0
+    }
+}
+impl<W: World> Sections<W> {
+    pub fn len(&self) -> usize {
+        consts::Y_SIZE / consts::SECTION_Y_SIZE
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash, Zeroable, Pod)]
 #[repr(transparent)]
@@ -79,6 +121,7 @@ pub struct AxolotlChunkSection<W: World> {
     pub biomes: AxolotlBiomeSection,
     pub y: i8,
 }
+
 impl<W: World> Clone for AxolotlChunkSection<W> {
     fn clone(&self) -> Self {
         Self {

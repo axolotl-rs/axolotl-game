@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 
 use auto_impl::auto_impl;
+pub use minecraft_protocol::packets::play::client::chunk::GetVanillaId;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer};
 

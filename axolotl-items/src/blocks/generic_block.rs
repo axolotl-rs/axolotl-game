@@ -132,6 +132,7 @@ impl NamespacedId for GenericBlock {
         &self.0.key
     }
 }
+
 impl NumericId for GenericBlock {
     fn id(&self) -> usize {
         self.0.id

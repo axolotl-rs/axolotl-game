@@ -10,9 +10,9 @@ use std::mem;
 use std::path::{Path, PathBuf};
 
 use axolotl_nbt::serde_impl;
+pub use flume::{bounded, unbounded, Receiver, Sender};
 //pub use crossbeam::channel::{bounded, unbounded, Receiver, Sender};
 use flume::Drain;
-pub use flume::{bounded, unbounded, Receiver, Sender};
 use log::{debug, info};
 use thiserror::Error;
 
@@ -114,7 +114,7 @@ impl<W: World> AxolotlGame<W> {
         let density_loader = AxolotlDensityLoader(SimpleRegistry::load_from_path(
             config
                 .data_dump
-                .join("reports")
+                .join("data")
                 .join("minecraft")
                 .join("worldgen")
                 .join("density_function"),
@@ -196,7 +196,7 @@ impl<W: World> AxolotlRegistries<W> {
         let chat_types = SimpleRegistry::load_from_path(
             data_dump
                 .as_ref()
-                .join("reports")
+                .join("data")
                 .join("minecraft")
                 .join("chat_type"),
         )?;
@@ -214,7 +214,7 @@ impl<W: World> AxolotlRegistries<W> {
             biomes: SimpleRegistry::load_from_path(
                 data_dump
                     .as_ref()
-                    .join("reports")
+                    .join("data")
                     .join("minecraft")
                     .join("worldgen")
                     .join("biome"),
@@ -282,21 +282,21 @@ impl AxolotlDataRegistries {
         let data_dump = data_dump.as_ref();
         let noises = SimpleRegistry::load_from_path(
             data_dump
-                .join("reports")
+                .join("data")
                 .join("minecraft")
                 .join("worldgen")
                 .join("noise"),
         )?;
         let noise_settings = SimpleRegistry::load_from_path(
             data_dump
-                .join("reports")
+                .join("data")
                 .join("minecraft")
                 .join("worldgen")
                 .join("noise_settings"),
         )?;
         let dimensions = SimpleRegistry::load_from_path(
             data_dump
-                .join("reports")
+                .join("data")
                 .join("minecraft")
                 .join("dimension_type"),
         )?;

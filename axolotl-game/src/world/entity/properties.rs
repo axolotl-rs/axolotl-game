@@ -4,10 +4,21 @@ pub struct Health(pub f32);
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct Food(pub f32);
 
+impl Default for Food {
+    fn default() -> Self {
+        Self(20.0)
+    }
+}
+impl Default for Health {
+    fn default() -> Self {
+        Self(20.0)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct AirLevel(pub f32);
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Location {
     pub x: f64,
     pub y: f64,

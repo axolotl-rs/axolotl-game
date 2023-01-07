@@ -15,7 +15,7 @@ use crate::world::chunk::consts::{
     SECTION_Z_SIZE,
 };
 use crate::world::chunk::placed_block::PlacedBlock;
-use crate::world::chunk::section::{InvalidChunkSection, SectionPosIndex};
+use crate::world::chunk::sections::{InvalidChunkSection, SectionPosIndex};
 use crate::AxolotlGame;
 
 /// Returns Err(()) if block is outside of the range
@@ -32,6 +32,7 @@ pub enum AxolotlBlockSection<W: World> {
         block_palette: Vec<PlacedBlock<W>>,
     },
 }
+
 impl<W: World> Clone for AxolotlBlockSection<W> {
     fn clone(&self) -> Self {
         match self {
@@ -118,6 +119,35 @@ where
 }
 
 impl<W: World> AxolotlBlockSection<W> {
+    /// TODO: Make this more efficient and accurate
+    pub fn count_air(&self) -> i16 {
+        let mut count: i16 = 0;
+        match self {
+            AxolotlBlockSection::Empty => {
+                count = 4096;
+            }
+            AxolotlBlockSection::SingleBlock(data) => {
+                if data.block.is_air() {
+                    count = 4096;
+                }
+            }
+            AxolotlBlockSection::Full {
+                blocks,
+                block_palette,
+            } => {
+                for i in 0..4096 {
+                    if let Some(block) = blocks.get(i as u64) {
+                        if let Some(block) = block_palette.get(block as usize) {
+                            if block.block.is_air() {
+                                count += 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        count
+    }
     pub fn set_block(&mut self, pos: impl Into<SectionPosIndex>, block: PlacedBlock<W>) {
         let pos = pos.into();
 

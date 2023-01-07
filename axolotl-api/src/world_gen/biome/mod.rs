@@ -94,18 +94,18 @@ impl<'de> Deserialize<'de> for Air {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Effects {
-    pub fog_color: u32,
-    pub water_color: u32,
-    pub water_fog_color: u32,
-    pub sky_color: u32,
+    pub fog_color: i32,
+    pub water_color: i32,
+    pub water_fog_color: i32,
+    pub sky_color: i32,
     pub mood_sound: MoodSound,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MoodSound {
     pub sound: OwnedNameSpaceKey,
-    pub tick_delay: u32,
+    pub tick_delay: i32,
     pub offset: f32,
-    pub block_search_extent: u32,
+    pub block_search_extent: i32,
 }
 // TODO Add Deserialization and Serialization
 #[derive(Debug, Clone)]
@@ -126,11 +126,11 @@ pub type GenerationStep = Vec<OwnedNameSpaceKey>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpawnerValue {
-    weight: u32,
+    weight: i32,
     #[serde(rename = "minCount")]
-    min_count: u32,
+    min_count: i32,
     #[serde(rename = "maxCount")]
-    max_count: u32,
+    max_count: i32,
     #[serde(rename = "type")]
     namespace: OwnedNameSpaceKey,
 }

@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use axolotl_api::world::{BlockPosition, World};
 use axolotl_api::world_gen::chunk::ChunkPos;
-use axolotl_api::world_gen::noise::ChunkGenerator;
 use axolotl_game::world::chunk::placed_block::PlacedBlock;
 use axolotl_game::world::chunk::AxolotlChunk;
 use axolotl_game::world::generator::AxolotlGenerator;
@@ -30,17 +29,17 @@ impl World for TestWorld {
 
     fn set_block(
         &self,
-        location: BlockPosition,
-        block: Self::WorldBlock,
-        require_loaded: bool,
+        _location: BlockPosition,
+        _block: Self::WorldBlock,
+        _require_loaded: bool,
     ) -> bool {
         todo!()
     }
 
     fn set_blocks(
         &self,
-        chunk_pos: ChunkPos,
-        blocks: impl Iterator<Item = (BlockPosition, Self::WorldBlock)>,
+        _chunk_pos: ChunkPos,
+        _blocks: impl Iterator<Item = (BlockPosition, Self::WorldBlock)>,
     ) {
         todo!()
     }

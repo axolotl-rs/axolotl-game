@@ -23,7 +23,7 @@ pub struct WorldsConfig {
 /// # Examples
 /// {"group": "vanilla", "world": "overworld"}
 /// "vanilla/overworld"
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Default)]
 pub struct WorldLocationID {
     pub group: String,
     pub world: String,

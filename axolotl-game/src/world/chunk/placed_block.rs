@@ -1,3 +1,5 @@
+use minecraft_protocol::packets::play::client::chunk::GetVanillaId;
+
 use axolotl_api::world::World;
 use axolotl_api::{NamespacedId, NumericId, OwnedNameSpaceKey};
 use axolotl_items::blocks::generic_block::VanillaStateIdOrValue;
@@ -10,6 +12,14 @@ use crate::AxolotlGame;
 pub struct PlacedBlock<W: World> {
     pub state: VanillaStateIdOrValue,
     pub block: MinecraftBlock<AxolotlGame<W>>,
+}
+impl<W: World> GetVanillaId for PlacedBlock<W> {
+    fn get_vanilla_id(&self) -> i32 {
+        match self.state {
+            VanillaStateIdOrValue::Id(id) => id as i32,
+            VanillaStateIdOrValue::Value(_) => 0,
+        }
+    }
 }
 impl<W: World> Clone for PlacedBlock<W> {
     fn clone(&self) -> Self {
