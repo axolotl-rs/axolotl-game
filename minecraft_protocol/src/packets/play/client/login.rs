@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::io::Write;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

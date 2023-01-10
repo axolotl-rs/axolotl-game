@@ -6,7 +6,7 @@ use crate::data::PacketDataType;
 use crate::java::define_packet;
 use crate::packets::login::client_bound::ClientBoundEncryptionRequest;
 use crate::packets::login::server_bound::ServerBoundEncryptionResponse;
-use crate::packets::login::VerifyMethod;
+
 use crate::Protocol::Java;
 use crate::{Bound, Packet, PacketReadError, PacketWriteError, Protocol, Stage};
 

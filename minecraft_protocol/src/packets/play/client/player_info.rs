@@ -1,5 +1,4 @@
 use bitflags::bitflags;
-use serde::{Deserialize, Serialize};
 
 use crate::data::var_int::VarInt;
 use crate::packets::login::Property;

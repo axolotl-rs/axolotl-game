@@ -8,7 +8,7 @@ use sha1::{Digest, Sha1};
 use thiserror::Error;
 
 use crate::packets::login::client_bound::ClientBoundEncryptionRequest;
-use crate::packets::login::{ClientBoundLogin, Property, ServerBoundLogin, SigData, VerifyMethod};
+use crate::packets::login::{ClientBoundLogin, Property, ServerBoundLogin};
 use crate::{AsyncStreamCipher, Decryptor, Encryptor};
 
 #[derive(Debug, Error)]

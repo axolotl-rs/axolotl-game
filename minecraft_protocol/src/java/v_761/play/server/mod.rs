@@ -94,7 +94,7 @@ impl Packet for ClientInformationImpl {
         Java(761)
     );
 
-    fn write<W: Write>(content: Self::Content, w: &mut W) -> Result<(), PacketWriteError> {
+    fn write<W: Write>(_content: Self::Content, _w: &mut W) -> Result<(), PacketWriteError> {
         todo!()
     }
 

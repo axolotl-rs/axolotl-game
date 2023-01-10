@@ -34,7 +34,7 @@ pub mod server_bound {
     use uuid::Uuid;
 
     use crate::data::var_int::VarInt;
-    use crate::packets::login::VerifyMethod;
+
     use crate::PacketContent;
 
     /// First Packet sent after the handshake

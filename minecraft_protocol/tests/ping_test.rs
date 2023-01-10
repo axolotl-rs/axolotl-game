@@ -12,7 +12,6 @@ use minecraft_protocol::java::status::{
     ClientBoundStatusIO, ClientBoundStatusPacket, ServerBoundStatusIO, Status, StatusOrString,
 };
 use minecraft_protocol::simple_handlers::{NonEncryptedPacketReader, NonEncryptedPacketWriter};
-use minecraft_protocol::ReadBufferType;
 use minecraft_protocol::{PacketLength, PacketReader, PacketWriter};
 
 #[tokio::test]

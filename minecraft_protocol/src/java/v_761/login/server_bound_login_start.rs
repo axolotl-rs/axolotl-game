@@ -7,7 +7,7 @@ use minecraft_protocol_macros::PacketImplDebug;
 use crate::data::PacketDataType;
 use crate::java::define_packet;
 use crate::packets::login::server_bound::ServerBoundLoginStart;
-use crate::packets::login::SigData;
+
 use crate::Protocol::Java;
 use crate::{Bound, Packet, PacketReadError, PacketWriteError, Protocol, Stage};
 

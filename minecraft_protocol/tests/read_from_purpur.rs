@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use log::{info, warn};
+use log::info;
 use simple_log::LogConfigBuilder;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -113,8 +113,6 @@ pub async fn test() -> anyhow::Result<()> {
 
         packet = read_next_packet(&mut socket, &mut handler).await;
     }
-
-    Ok(())
 }
 async fn write_packet(
     socket: &mut TcpStream,

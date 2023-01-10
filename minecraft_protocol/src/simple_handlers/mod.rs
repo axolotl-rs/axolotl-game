@@ -3,7 +3,6 @@ use std::mem;
 
 use bytes::{Buf, BytesMut};
 use flate2::bufread::GzDecoder;
-use log::debug;
 
 #[cfg(feature = "encryption")]
 pub use encrypted::{EncryptedPacketReader, EncryptedPacketWriter};
@@ -15,7 +14,7 @@ use crate::data::var_int::VarInt;
 use crate::data::{var_int, PacketDataType};
 use crate::{
     CompressionSettings, PacketIO, PacketLength, PacketReadError, PacketReader, PacketWriteError,
-    PacketWriter, ReadBufferType,
+    PacketWriter,
 };
 
 #[cfg(feature = "encryption")]
@@ -28,12 +27,11 @@ pub mod optional_encryption;
 pub(crate) trait InternalPacketWriter<IO: PacketIO>: PacketWriter<Buffer = Vec<u8>> {
     fn internal_write(&mut self, packet: IO::Type) -> Result<(), PacketWriteError> {
         let mut header = [0u8; 6];
-        let mut header_len = 0usize;
         self.get_buffer().write_all(&header)?;
         IO::handle_write(packet.into(), &mut self.get_buffer())?;
         let len_as_i32 = self.get_buffer()[6..].len() as i32;
 
-        if let CompressionSettings::Zlib {
+        let header_len = if let CompressionSettings::Zlib {
             threshold,
             compression_level,
         } = &self.get_compression()
@@ -47,7 +45,8 @@ pub(crate) trait InternalPacketWriter<IO: PacketIO>: PacketWriter<Buffer = Vec<u
                 compressor.write_all(&mut self.get_buffer())?;
                 let compressed = compressor.finish()?;
 
-                header_len = var_int::inline::write(compressed.len() as i32, &mut header.as_mut())?;
+                let mut header_len =
+                    var_int::inline::write(compressed.len() as i32, &mut header.as_mut())?;
                 header_len = header_len
                     + var_int::inline::write(
                         self.get_buffer().len() as i32,
@@ -58,11 +57,11 @@ pub(crate) trait InternalPacketWriter<IO: PacketIO>: PacketWriter<Buffer = Vec<u
                 self.get_buffer().write_all(&compressed)?;
                 return Ok(());
             } else {
-                header_len = var_int::inline::write(len_as_i32, &mut header.as_mut())? + 1;
+                var_int::inline::write(len_as_i32, &mut header.as_mut())? + 1
             }
         } else {
-            header_len = var_int::inline::write(len_as_i32, &mut header.as_mut())?;
-        }
+            var_int::inline::write(len_as_i32, &mut header.as_mut())?
+        };
         self.get_buffer()
             .splice(0..6, header[..header_len].iter().cloned());
 

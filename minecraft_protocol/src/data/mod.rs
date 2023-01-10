@@ -4,8 +4,7 @@ use std::io::{Read, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use nbt::Blob;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
+
 use uuid::Uuid;
 
 use crate::data::var_int::VarInt;
