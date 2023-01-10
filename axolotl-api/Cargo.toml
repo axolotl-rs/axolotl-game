@@ -16,4 +16,4 @@ num-traits = "0.2.15"
 bytemuck = { version = "1.12", features = ["derive"] }
 axolotl-types = { git = "https://github.com/axolotl-rs/plain-axolotl.git" }
 auto_impl = "1.0.1"
-minecraft_protocol = { path = "../../minecraft_protocol" }
+minecraft_protocol = { path = "../minecraft_protocol" }

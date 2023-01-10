@@ -1,0 +1,47 @@
+[package]
+name = "minecraft_protocol"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+bytemuck = "1.12"
+bytemuck_derive = "1.2"
+uuid = { version = "1.2", features = ["serde", "v4"] }
+minecraft_protocol_macros = { path = "macros" }
+byteorder = "1"
+serde_json = "1"
+log = "0.4"
+paste = "1"
+flate2 = { version = "1" }
+hematite-nbt = { git ="https://github.com/PistonDevelopers/hematite_nbt.git" }
+tokio = { version = "1.23.0", features = ["net"] }
+
+bytes = "1.2"
+# Encryption
+aes = { version = "0.8", optional = true }
+cfb-mode = { version = "0.8", optional = true }
+rsa = { version = "0.7", optional = true }
+
+sha1 = "0.10"
+sha2 = "0.10"
+num-bigint = "0.4"
+anyhow = "1"
+bitflags = "2.0.0-rc.1"
+# Login
+reqwest = { version = "0.11", features = ["json"] }
+rand = "0.8"
+[dev-dependencies]
+simple-log = "1"
+socket2 = "0.4"
+criterion = "0.4"
+tokio = { version = "1.23.0", features = ["full"] }
+[[bench]]
+name = "write"
+harness = false
+[features]
+default = ["encryption"]
+encryption = ["aes", "cfb-mode", "rsa"]

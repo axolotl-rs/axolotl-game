@@ -5,5 +5,7 @@ members = [
     "axolotl-game",
     "axolotl-world",
     "axolotl-items",
-    "axolotl-entities"
+    "axolotl-entities",
+    "minecraft_protocol/macros",
+    "minecraft_protocol",
 ]

@@ -1,3 +1,5 @@
+pub mod command;
+
 use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};

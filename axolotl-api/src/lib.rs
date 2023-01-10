@@ -24,6 +24,7 @@ pub mod item;
 pub mod math;
 pub mod name;
 pub mod player;
+pub mod server;
 pub mod world;
 pub mod world_gen;
 

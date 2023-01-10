@@ -14,12 +14,13 @@ rand = "0.8.5"
 paste = "1"
 log = "0.4"
 thiserror = "1"
+atomic_enum = "0.2.0"
 tux_lockfree = { git = "https://github.com/wyatt-herkamp/tux_lockfree.git" }
 axolotl-noise = { git = "https://github.com/axolotl-rs/axolotl-noise.git", features = ["minecraft"] }
 axolotl-world = { path = "../axolotl-world" }
 axolotl-items = { path = "../axolotl-items" }
 axolotl-data-rs = { git = "https://github.com/axolotl-rs/axolotl-data-rs.git" }
-minecraft_protocol = { path = "../../minecraft_protocol" }
+minecraft_protocol = { path = "../minecraft_protocol" }
 auto_impl = "1.0.1"
 dashmap = "5.4"
 parking_lot = "0.12"

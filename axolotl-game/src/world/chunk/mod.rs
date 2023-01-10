@@ -1,7 +1,9 @@
+use atomic_enum::atomic_enum;
 use std::fmt::Debug;
+use std::future::Future;
 use std::ops::{Deref, DerefMut, Index};
 use std::slice::SliceIndex;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 
 use log::warn;
@@ -22,9 +24,11 @@ use crate::AxolotlGame;
 
 pub mod consts;
 mod map;
+pub mod network;
 pub mod placed_block;
 mod sections;
 
+pub use map::ChunkMap;
 #[derive(Debug)]
 pub struct AxolotlChunk<W: World> {
     pub chunk_pos: ChunkPos,
@@ -121,11 +125,59 @@ impl<W: World> IntoRawChunk<W> for AxolotlChunk<W> {
         }
     }
 }
+#[derive(PartialEq, Eq, Hash, Default)]
+#[repr(usize)]
+#[atomic_enum(AtomicLoadState)]
+pub enum LoadState {
+    #[default]
+    Unloaded = 0,
+    Loading = 1,
+    Loaded = 2,
+    Unloading = 3,
+}
 
 #[derive(Debug)]
 pub struct InnerChunkHandle<W: World> {
     pub value: RwLock<AxolotlChunk<W>>,
-    pub loaded: AtomicBool,
+    pub loaded: AtomicLoadState,
+}
+
+pub struct ChunkFuture<W: World>(ChunkHandle<W>);
+impl<W: World> Future for ChunkFuture<W> {
+    type Output = Result<ChunkHandle<W>, ()>;
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        if self.0.is_loaded() {
+            std::task::Poll::Ready(Ok(self.0.clone()))
+        } else {
+            std::task::Poll::Pending
+        }
+    }
+}
+impl<W: World> InnerChunkHandle<W> {
+    pub fn new(value: AxolotlChunk<W>) -> Self {
+        Self {
+            value: RwLock::new(value),
+            loaded: AtomicLoadState::new(LoadState::Unloaded),
+        }
+    }
+    pub fn wait_for_load(chunk: Arc<Self>) -> ChunkFuture<W> {
+        ChunkFuture(chunk)
+    }
+    pub fn mark_loaded(&self) {
+        self.loaded.store(LoadState::Loaded, Ordering::Relaxed);
+    }
+    pub fn mark_loading(&self) {
+        self.loaded.store(LoadState::Loading, Ordering::Relaxed);
+    }
+    pub fn safe_to_load(&self) -> bool {
+        self.loaded.load(Ordering::Relaxed) == LoadState::Unloaded
+    }
+    pub fn is_loaded(&self) -> bool {
+        self.loaded.load(Ordering::Relaxed) == LoadState::Loaded
+    }
 }
 
 pub type ChunkHandle<W> = Arc<InnerChunkHandle<W>>;
